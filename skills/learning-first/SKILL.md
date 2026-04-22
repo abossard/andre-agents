@@ -118,6 +118,27 @@ bash "$PLUGIN_DIR/scripts/quiz.sh" <command>
 bash "$PLUGIN_DIR/scripts/achievements.sh" <command>
 ```
 
+## Subagent Dispatch
+
+For each phase, dispatch specialized subagents using strong models (Opus/GPT-5.4):
+
+**Curriculum generation (Step 3):**
+Read `curriculum-designer-prompt.md` in this directory for the dispatch template.
+
+**Teaching modules (Step 4):**
+Read `socratic-tutor-prompt.md` in this directory. Use the Master Teacher persona
+(`agents/master-teacher.md`).
+
+**Quiz evaluation (Step 4):**
+Read `knowledge-assessor-prompt.md` in this directory.
+
+**Achievement celebration (Step 6):**
+Use the Achievement Narrator persona (`agents/achievement-narrator.md`).
+
+**Design review (Step 5):**
+Read `learning-reviewer-prompt.md` in this directory. Use the Wise Reviewer persona
+(`agents/wise-reviewer.md`).
+
 ## Step Details
 
 ### 1. Initialize & Greet
