@@ -86,21 +86,25 @@ git clone https://github.com/abossard/andre-agents.git /path/to/learning-first
 
 ### Step 2: Install for your platform
 
-#### Claude Code
-
-```bash
-# Register the plugin (run from anywhere)
-claude plugin add ~/learning-first
-```
-
-That's it. Learning-first is now active in every Claude Code session.
-
 #### GitHub Copilot CLI
 
 ```bash
-# Install via plugin command
-copilot plugin add ~/learning-first
+# Install directly from the GitHub repo
+copilot plugin install abossard/andre-agents
 ```
+
+#### Claude Code
+
+```bash
+# Option A: Install from local clone (for development/customization)
+claude --plugin-dir ~/learning-first
+
+# Option B: Load for a single session only
+claude --plugin-dir ~/learning-first
+```
+
+> **Note:** Claude Code's `plugin install` works with marketplaces. For git repos,
+> use `--plugin-dir` to load from a local directory, or publish to a marketplace.
 
 ### Step 3: Verify it works
 
@@ -118,23 +122,27 @@ to propose your own design — instead of writing code for you.
 
 ### Updating
 
+#### GitHub Copilot CLI
+```bash
+copilot plugin update learning-first
+```
+
+#### Local clone
 ```bash
 cd ~/learning-first && git pull
 ```
 
-No restart needed — changes take effect on the next session.
+Changes take effect on the next session.
 
 ### Uninstalling
 
-#### Claude Code
-```bash
-claude plugin remove learning-first
-```
-
 #### GitHub Copilot CLI
 ```bash
-copilot plugin remove learning-first
+copilot plugin uninstall learning-first
 ```
+
+#### Claude Code
+Remove the `--plugin-dir` flag from your launch command.
 
 Your learning progress in `~/.learning-first/knowledge.db` is preserved. Delete it
 manually if you want a clean slate: `rm -rf ~/.learning-first/`
