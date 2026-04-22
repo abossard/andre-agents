@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# SessionStart hook for learning-first plugin
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+# Read the learning-first skill content
+learning_first_content=$(cat "${PLUGIN_ROOT}/skills/learning-first/SKILL.md" 2>&1 || echo "Error reading learning-first skill")
+
+# Escape string for JSON embedding
+escape_for_json() {
+    local s="$1"
+    s="${s//\\/\\\\}"
+    s="${s//\"/\\\"}"
+    s="${s//$'\n'/\\n}"
+    s="${s//$'\r'/\\r}"
+    s="${s//$'\t'/\\t}"
+    printf '%s' "$s"
+}
+
+learning_first_escaped=$(escape_for_json "$learning_first_content")
+session_context="<EXTREMELY_IMPORTANT>\nYou have learning-first superpowers.\n\n**Below is the learning-first skill. When your human partner asks to build, implement, or modify anything, use this skill to teach them first:**\n\n${learning_first_escaped}\n\n</EXTREMELY_IMPORTANT>"
+
+# Output context injection — multi-platform support
+if [ -n "${CURSOR_PLUGIN_ROOT:-}" ]; then
+  printf '{\n  "additional_context": "%s"\n}\n' "$session_context"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -z "${COPILOT_CLI:-}" ]; then
+  printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "SessionStart",\n    "additionalContext": "%s"\n  }\n}\n' "$session_context"
+else
+  printf '{\n  "additionalContext": "%s"\n}\n' "$session_context"
+fi
+
+exit 0
