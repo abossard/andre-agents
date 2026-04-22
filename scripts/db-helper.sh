@@ -27,7 +27,13 @@ db_exec() {
 }
 
 db_json_query() {
-    sqlite3 -json "$LEARNING_FIRST_DB" "$1"
+    local result
+    result=$(sqlite3 -json "$LEARNING_FIRST_DB" "$1")
+    if [ -z "$result" ]; then
+        echo "[]"
+    else
+        echo "$result"
+    fi
 }
 
 db_safe_value() {
