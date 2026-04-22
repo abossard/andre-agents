@@ -68,25 +68,121 @@ Agent files live in `agents/` and are referenced by skills as needed.
 
 ## Installation
 
-### Claude Code
+Learning-first installs **alongside** your existing project — it doesn't modify your
+files, add dependencies, or change your build. It's a plugin that lives outside your
+codebase and only activates when the AI agent starts a session.
+
+### Step 1: Clone the plugin
+
+Pick a permanent location for the plugin. This is NOT inside your project:
 
 ```bash
-# Clone the repo
-git clone https://github.com/abossard/andre-agents.git
+# Clone to your home directory (recommended)
+git clone https://github.com/abossard/andre-agents.git ~/learning-first
 
-# Add as a plugin
-claude plugin add /path/to/andre-agents
+# Or any location you prefer
+git clone https://github.com/abossard/andre-agents.git /path/to/learning-first
 ```
 
-### GitHub Copilot CLI
+### Step 2: Install for your platform
 
-Clone or symlink to your Copilot CLI plugin discovery directory.
-
-### Updates
+#### Claude Code
 
 ```bash
-cd /path/to/andre-agents && git pull
+# Register the plugin (run from anywhere)
+claude plugin add ~/learning-first
 ```
+
+That's it. Learning-first is now active in every Claude Code session.
+
+#### GitHub Copilot CLI
+
+```bash
+# Install via plugin command
+copilot plugin add ~/learning-first
+```
+
+### Step 3: Verify it works
+
+Start a new session and ask the agent to build something:
+
+```
+> Add authentication to the API
+```
+
+If learning-first is active, you'll see:
+> "I'm using learning-first to teach the relevant concepts before we implement."
+
+The agent will teach you about auth patterns, quiz your understanding, and guide you
+to propose your own design — instead of writing code for you.
+
+### Updating
+
+```bash
+cd ~/learning-first && git pull
+```
+
+No restart needed — changes take effect on the next session.
+
+### Uninstalling
+
+#### Claude Code
+```bash
+claude plugin remove learning-first
+```
+
+#### GitHub Copilot CLI
+```bash
+copilot plugin remove learning-first
+```
+
+Your learning progress in `~/.learning-first/knowledge.db` is preserved. Delete it
+manually if you want a clean slate: `rm -rf ~/.learning-first/`
+
+---
+
+## Quick Start
+
+### "I just installed it. What do I do?"
+
+**Nothing special.** Just use your AI agent normally. When you ask it to implement
+something, learning-first automatically kicks in and teaches you first.
+
+Try these to see it in action:
+
+| What you say | What happens |
+|-------------|-------------|
+| "Add JWT auth to the API" | Teaches auth concepts, quizzes you, guides your design |
+| "Fix this null pointer bug" | Teaches systematic debugging methodology |
+| "Write tests for the user service" | Teaches TDD (RED-GREEN-REFACTOR) |
+| "Review my changes" | Guides you through self-reviewing your own code |
+
+### "How do I skip the teaching?"
+
+Say **"skip"** or **"I know this"** at any point. The agent records your skip
+and moves on — no guilt, no pushback.
+
+### "How do I check my progress?"
+
+Use the built-in commands:
+
+```
+/learning-status          # Topics, depth levels, current curriculum
+/learning-achievements    # Earned milestones
+/learning-stats           # Quiz accuracy and topics covered
+```
+
+### "How do I use a specific skill?"
+
+Ask the agent directly:
+
+```
+> Use learning-tdd to teach me testing
+> Use learning-debugging to help me understand this error
+> Use learning-planning to help me break down this feature
+```
+
+Or just describe what you need — the agent picks the right skill automatically.
 
 ## How It Works
 
