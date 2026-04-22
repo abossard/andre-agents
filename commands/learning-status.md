@@ -5,7 +5,8 @@ description: "Show your learning profile — topics, depth levels, and current c
 Run the knowledge profile command and format the output for your human partner:
 
 ```bash
-PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Resolve plugin root from platform env var or script location
+PLUGIN_DIR="${CLAUDE_PLUGIN_ROOT:-${COPILOT_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}}"
 bash "$PLUGIN_DIR/scripts/knowledge-db.sh" get-profile
 ```
 

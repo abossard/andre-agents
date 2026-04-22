@@ -1,7 +1,7 @@
 # Learning-First
 
 A learning-focused skill plugin for [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
-and [GitHub Copilot CLI](https://githubnext.com/projects/copilot-cli/) that teaches before
+and [GitHub Copilot CLI](https://docs.github.com/copilot/how-tos/copilot-cli) that teaches before
 implementing.
 
 ## What It Does
@@ -16,7 +16,7 @@ learning flow first:
 5. **Adapts** depth based on your performance — returning to the same topic goes deeper
 6. **Guides** you to propose your own design instead of giving you the answer
 
-The agent **never writes implementation code**. It teaches, quizzes, guides, and celebrates.
+The agent **never writes full implementation code**. It teaches, quizzes, guides, and celebrates.
 
 ## The Iron Law
 
@@ -72,41 +72,35 @@ Learning-first installs **alongside** your existing project — it doesn't modif
 files, add dependencies, or change your build. It's a plugin that lives outside your
 codebase and only activates when the AI agent starts a session.
 
-### Step 1: Clone the plugin
+### Prerequisites
 
-Pick a permanent location for the plugin. This is NOT inside your project:
+- **`sqlite3`** ≥ 3.33.0 (for `-json` flag — included in macOS Monterey 12+)
+- **`jq`** (for JSON processing in curriculum scripts)
+- **`bash`** ≥ 4.0
 
-```bash
-# Clone to your home directory (recommended)
-git clone https://github.com/abossard/andre-agents.git ~/learning-first
-
-# Or any location you prefer
-git clone https://github.com/abossard/andre-agents.git /path/to/learning-first
-```
-
-### Step 2: Install for your platform
+### Step 1: Install for your platform
 
 #### GitHub Copilot CLI
 
 ```bash
-# Install directly from the GitHub repo
+# Install directly from GitHub (no clone needed)
 copilot plugin install abossard/andre-agents
 ```
 
 #### Claude Code
 
 ```bash
-# Option A: Install from local clone (for development/customization)
-claude --plugin-dir ~/learning-first
+# Clone the repo first
+git clone https://github.com/abossard/andre-agents.git ~/learning-first
 
-# Option B: Load for a single session only
+# Launch Claude Code with the plugin loaded
 claude --plugin-dir ~/learning-first
 ```
 
-> **Note:** Claude Code's `plugin install` works with marketplaces. For git repos,
-> use `--plugin-dir` to load from a local directory, or publish to a marketplace.
+> **Note:** Claude Code's `plugin install` only works with registered marketplaces.
+> For GitHub repos, use `--plugin-dir` to load from a local directory.
 
-### Step 3: Verify it works
+### Step 2: Verify it works
 
 Start a new session and ask the agent to build something:
 
@@ -120,6 +114,10 @@ If learning-first is active, you'll see:
 The agent will teach you about auth patterns, quiz your understanding, and guide you
 to propose your own design — instead of writing code for you.
 
+**Not triggering?** The plugin uses a SessionStart hook to inject routing instructions.
+If skills don't activate, try restarting the session. On Copilot CLI, verify with
+`copilot plugin list` that `learning-first` appears.
+
 ### Updating
 
 #### GitHub Copilot CLI
@@ -127,7 +125,7 @@ to propose your own design — instead of writing code for you.
 copilot plugin update learning-first
 ```
 
-#### Local clone
+#### Claude Code (local clone)
 ```bash
 cd ~/learning-first && git pull
 ```

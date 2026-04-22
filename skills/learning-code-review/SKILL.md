@@ -67,7 +67,7 @@ fresh eyes. Teach them to review their own code BEFORE asking others.
 ## Related Skills
 
 - **learning-verification** — use for the "does it work?" part of review
-- Self-Review Coach prompt template (`self-review-coach-prompt.md`)
+- Self-Review Coach prompt template (`skills/learning-first/self-review-coach-prompt.md`)
 - Wise Reviewer persona (`agents/wise-reviewer.md`)
 
 ## Plugin Directory

@@ -5,7 +5,7 @@ description: "Show quiz statistics — accuracy, topics covered, learning veloci
 Run the stats commands and format the output:
 
 ```bash
-PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PLUGIN_DIR="${CLAUDE_PLUGIN_ROOT:-${COPILOT_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}}"
 bash "$PLUGIN_DIR/scripts/quiz.sh" stats
 ```
 

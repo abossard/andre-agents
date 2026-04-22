@@ -48,8 +48,8 @@ Task tool (general-purpose, model: opus or gpt-5.4):
        - Use the codebase as the primary example
        - Context before detail — WHY before HOW
 
-    4. **Quiz (2-3 questions)** using ask_user tool
-       - Level {DEPTH_LEVEL} question style (see teaching-methodology.md)
+    4. **Quiz (2-3 questions)** — ask the user directly (use `ask_user` tool if available)
+       - Level {DEPTH_LEVEL} question style (see docs/references/teaching-methodology.md)
        - Prefer multiple choice at L1, scenario-based at L2, open-ended at L3
        - One question at a time
 

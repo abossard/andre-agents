@@ -199,7 +199,7 @@ For each module, follow the Socratic approach from SocraticLM (NeurIPS 2024):
 - Ask "what do you notice about this code?" before explaining
 
 **b) Quiz** — Thought-provoking questions, not factual recall:
-- Level 1: Multiple choice, concept recognition via `ask_user`
+- Level 1: Multiple choice, concept recognition — ask the user directly
 - Level 2: Scenario-based ("Looking at this file, what would happen if...")
 - Level 3: Open-ended design critique ("What are the trade-offs of this approach?")
 - Prefer questions that probe *reasoning*, not memorization

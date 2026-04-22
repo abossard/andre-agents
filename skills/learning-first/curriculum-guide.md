@@ -79,7 +79,7 @@ Create the modules JSON for `curriculum.sh create`:
 - **Level 2:** "Looking at `path/to/file.ts`, what would happen if Z?"
 - **Level 3:** "The current implementation does X. What are the trade-offs and alternatives?"
 
-Always use the `ask_user` tool for quizzes — prefer multiple choice at L1/L2, open-ended at L3.
+Always ask the user directly for quiz answers (use `ask_user` tool if available, otherwise ask inline). Prefer multiple choice at L1/L2, open-ended at L3.
 
 ## Scoring
 
