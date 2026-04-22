@@ -6,8 +6,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-# Read the learning-first skill content
-learning_first_content=$(cat "${PLUGIN_ROOT}/skills/learning-first/SKILL.md" 2>&1 || echo "Error reading learning-first skill")
+# Read the meta routing skill (like superpowers reads using-superpowers)
+learning_first_content=$(cat "${PLUGIN_ROOT}/skills/using-learning-first/SKILL.md" 2>&1 || echo "Error reading using-learning-first skill")
 
 # Escape string for JSON embedding
 escape_for_json() {
@@ -21,7 +21,7 @@ escape_for_json() {
 }
 
 learning_first_escaped=$(escape_for_json "$learning_first_content")
-session_context="<EXTREMELY_IMPORTANT>\nYou have learning-first superpowers.\n\n**Below is the learning-first skill. When your human partner asks to build, implement, or modify anything, use this skill to teach them first:**\n\n${learning_first_escaped}\n\n</EXTREMELY_IMPORTANT>"
+session_context="<EXTREMELY_IMPORTANT>\nYou have learning-first skills.\n\n**Below is the full content of your 'learning-first:using-learning-first' skill - your introduction to using learning skills. For all other skills, use the 'Skill' tool:**\n\n${learning_first_escaped}\n\n</EXTREMELY_IMPORTANT>"
 
 # Output context injection — multi-platform support
 if [ -n "${CURSOR_PLUGIN_ROOT:-}" ]; then
