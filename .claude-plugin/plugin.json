@@ -1,0 +1,16 @@
+{
+  "name": "learning-first",
+  "description": "A learning-focused skill plugin that teaches before implementing — for team onboarding",
+  "version": "0.1.0",
+  "author": {
+    "name": "Andre Bossard"
+  },
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "learning",
+    "onboarding",
+    "curriculum",
+    "teaching"
+  ]
+}

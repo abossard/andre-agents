@@ -1,0 +1,20 @@
+{
+  "name": "learning-first",
+  "version": "0.1.0",
+  "description": "A learning-focused skill plugin that teaches before implementing — for team onboarding",
+  "license": "MIT",
+  "author": {
+    "name": "Andre Bossard"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/abossard/andre-agents"
+  },
+  "keywords": [
+    "skills",
+    "learning",
+    "onboarding",
+    "curriculum",
+    "teaching"
+  ]
+}
