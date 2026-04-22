@@ -114,9 +114,15 @@ If learning-first is active, you'll see:
 The agent will teach you about auth patterns, quiz your understanding, and guide you
 to propose your own design — instead of writing code for you.
 
-**Not triggering?** The plugin uses a SessionStart hook to inject routing instructions.
-If skills don't activate, try restarting the session. On Copilot CLI, verify with
-`copilot plugin list` that `learning-first` appears.
+**Not triggering?** Check these steps:
+1. Verify it's installed: `copilot plugin list` should show `learning-first`
+2. **Start a new session** — hooks only fire on session start
+3. If skills still don't auto-activate, the `using-learning-first` skill should be
+   visible in the available skills list. You can invoke it explicitly:
+   ```
+   > use learning-first to teach me about this codebase
+   ```
+4. You can also select the **master-teacher** agent to start in teaching mode
 
 ### Updating
 
