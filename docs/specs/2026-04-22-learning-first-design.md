@@ -9,7 +9,7 @@ When AI agents help developers implement features, the developer often doesn't d
 
 ## Proposed Solution
 
-A plugin that **replaces the brainstorming skill** with a learning-first workflow. Before implementation, the agent:
+A plugin that **enhances, builds upon and changes the superpowers skills and agents** with a learning-first workflow. Before implementation, the agent:
 
 1. Analyzes the codebase and task to identify what concepts the developer needs to understand
 2. Generates a dynamic curriculum tailored to the developer's current knowledge level
@@ -17,6 +17,12 @@ A plugin that **replaces the brainstorming skill** with a learning-first workflo
 4. Quizzes the developer to assess understanding (soft gate — skippable)
 5. Adapts depth based on quiz performance
 6. Only then proceeds to design and implementation planning
+
+So it's build on superpowers but:
+- I never writes or changes any code
+- It's not telling a solution to the user, but guiding and nudging the user
+- Primary objective is to assist the user in learning that they could work without using AI
+- the user can proof his knowledge by answering questions, and the agent will adapt the curriculum based on the user's performance also in the future
 
 ## Target Users
 
@@ -64,14 +70,15 @@ andre-agents/
 USER REQUEST ("Add JWT auth to the API")
         │
         ▼
-1. CONTEXT SCAN
+1. CONTEXT SCAN + SPEC
    - Analyze codebase: frameworks, languages, existing patterns
    - Check user's knowledge profile for prior learning
    - Identify what concepts this task involves
+   - use the superpowers brainstorm skill, BUT don't expose any of the outcomes with the user
         │
         ▼
 2. CURRICULUM GENERATION
-   - Build a task-specific learning path
+   - Build a task-specific learning path, covering the potential topics required to implement the a possible spec from the brainstorm step
    - Skip topics the user has already mastered
    - Calibrate depth based on prior quiz performance
    Example modules:
