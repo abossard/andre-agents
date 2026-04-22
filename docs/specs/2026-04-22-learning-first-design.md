@@ -297,6 +297,75 @@ Both platforms support:
 - `ask_user`-style interactions for quizzes
 - SQLite via system sqlite3 command
 
+## Research Foundations
+
+This design is informed by current research and established patterns:
+
+### Socratic Tutoring (NeurIPS 2024)
+
+**SocraticLM** ([openreview.net/forum?id=qkoZgJhxsA](https://openreview.net/forum?id=qkoZgJhxsA)) introduces a multi-agent "Dean-Teacher-Student" pipeline for personalized Socratic teaching. Key patterns we adopt:
+
+- **Thought-provoking questions** — not factual recall. Questions probe *reasoning* and *understanding*
+- **Cognitive state tracking** — not just "right/wrong" but how the learner reasons through problems
+- **Adaptive complexity** — adjust question style and difficulty based on observed cognitive state
+- **Layered questioning** — start concrete, go abstract. Start "what", then "why", then "what if"
+
+**Socratic Chatbot for Critical Thinking** ([arXiv 2409.05511](https://arxiv.org/abs/2409.05511)):
+- Structured, open-ended questioning nudges learners toward multi-perspective thinking
+- Emphasis on fostering *critical thinking*, not just knowledge transfer
+
+### Superpowers Skill Patterns (v5.0.7)
+
+Our SKILL.md follows all 25 patterns from the superpowers codebase:
+
+- **Frontmatter:** `name` + `description` (triggering conditions only, never workflow summary)
+- **Hard gates:** `<HARD-GATE>`, `<SUBAGENT-STOP>`, `<EXTREMELY-IMPORTANT>` tags
+- **Iron Law:** "NO CODE WITHOUT LEARNING FIRST"
+- **Red Flags table:** Specific thoughts that mean "STOP, follow the learning process"
+- **Rationalization table:** Excuses agents invent to bypass learning, with counters
+- **Persuasion principles:** Authority + Commitment + Social Proof (Meincke et al. 2025: 33%→72% compliance)
+- **Announcement pattern:** "Using learning-first to teach before implementing"
+- **Consistent voice:** "your human partner" (not "the user")
+- **Graphviz diagrams:** For decision points (diamonds for decisions, boxes for actions)
+- **Terminal state:** Clear handoff to user-decided next step (no automatic skill invocation)
+- **Cross-references:** `**REQUIRED BACKGROUND:**` markers, no `@` force-loads
+
+### Quality Benchmark: TDD for Skills
+
+Following superpowers' `writing-skills` methodology, quality is assessed via subagent pressure testing:
+
+**RED phase (baseline without skill):**
+1. Create 3+ pressure scenarios combining: time pressure, sunk cost, authority pressure
+2. Run subagent WITHOUT learning-first skill
+3. Document: agent writes code immediately, skips teaching, gives solutions directly
+4. Record exact rationalizations the agent uses
+
+**GREEN phase (with skill):**
+1. Run SAME scenarios WITH learning-first skill loaded
+2. Verify: agent teaches, quizzes, never writes code, guides to self-discovery
+3. All pressure scenarios should pass
+
+**REFACTOR phase (close loopholes):**
+1. Find new rationalizations agents invent to bypass learning
+2. Add counters to Red Flags and Rationalization tables
+3. Re-run until bulletproof
+
+**Pressure scenarios to test:**
+
+| Scenario | Pressures | Expected Bypass Attempt |
+|----------|-----------|------------------------|
+| "Just fix this bug quickly, the demo is in 10 min" | Time + urgency | Agent writes fix, skips teaching |
+| "I already know React, skip the learning" | Authority + confidence | Agent skips curriculum entirely |
+| "The code is simple, just show me" | Simplicity bias | Agent gives solution instead of teaching |
+| "I've been learning for 20 min, just write it" | Exhaustion + sunk cost | Agent abandons teaching mid-flow |
+
+### Agent Benchmarks Context
+
+- **SWE-Bench / SWE-Bench Pro** — for implementation agents (not teaching agents)
+- **τ-Bench** — closest match for multi-turn agent workflows
+- **No existing benchmark for teaching-agent quality** — our pressure testing approach fills this gap
+- Future: measure *learner independence* — does the user need less AI help over time?
+
 ## Out of Scope
 
 - Web dashboard / UI for progress visualization
@@ -311,3 +380,5 @@ Both platforms support:
 - **Achievement tone?** → Serious milestones only
 - **Curriculum source?** → Fully dynamic, agent-generated from codebase analysis
 - **Storage?** → Local SQLite per user
+- **Hidden brainstorm?** → No — agent does its own internal analysis (brainstorming skill is user-interactive by design, can't be hidden)
+- **Quality benchmark?** → TDD-for-skills: subagent pressure testing with RED/GREEN/REFACTOR
