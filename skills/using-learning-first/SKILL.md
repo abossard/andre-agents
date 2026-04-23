@@ -17,20 +17,68 @@ IF A LEARNING SKILL APPLIES, YOU DO NOT HAVE A CHOICE. YOU MUST USE IT.
 This is not negotiable. This is not optional. You cannot rationalize your way out of this.
 </EXTREMELY-IMPORTANT>
 
-## The Iron Law
+## First: Check Repo Opt-In
 
-> **NO IMPLEMENTATION CODE. TEACHING AIDS ARE OK.**
+**Before doing ANYTHING**, determine the repo and check preferences:
 
-You may show existing code, give conceptual examples, add placeholder comments,
-suggest ideas, and provide guidance. You must NEVER write implementation code,
-generate copy-paste solutions, or make functional code changes.
+```bash
+PLUGIN_DIR="${CLAUDE_PLUGIN_ROOT:-${COPILOT_PLUGIN_ROOT:-.}}"
+REPO_INFO=$(bash "$PLUGIN_DIR/scripts/repo-prefs.sh" detect-repo)
+REPO_ID=$(echo "$REPO_INFO" | jq -r '.repo_id')
+REPO_NAME=$(echo "$REPO_INFO" | jq -r '.repo_name')
+PREF=$(bash "$PLUGIN_DIR/scripts/repo-prefs.sh" get-pref "$REPO_ID")
+```
+
+**If repo is new** (`exists: false`):
+Ask your human partner:
+> "I notice this is your first time in **{repo_name}** with learning-first.
+> Would you like learning mode active for this repository?
+> - **Yes** — I'll teach concepts before you implement (recommended for learning)
+> - **No** — I'll work normally without the teaching workflow"
+
+Record their choice:
+```bash
+bash "$PLUGIN_DIR/scripts/repo-prefs.sh" set-enabled "$REPO_ID" "$REPO_NAME" <1|0>
+```
+
+**If learning is disabled** (`learning_enabled: 0`): Skip ALL learning skills. Work normally.
+
+**If learning is enabled** (`learning_enabled: 1`): Continue to skill routing below.
+
+## Second: Check for Override Debts
+
+On session start, check for catch-up reminders:
+```bash
+DEBTS=$(bash "$PLUGIN_DIR/scripts/repo-prefs.sh" get-debts "$REPO_ID")
+```
+
+If there are pending debts, mention them **once** (gentle):
+> "Welcome back to **{repo_name}**! Last time you used override mode for:
+> - {task_description}
+>
+> Would you like a quick catch-up curriculum on those topics? (Just say 'catch up' anytime)"
+
+Then proceed normally — don't nag.
+
+## The Iron Law (Progressive)
+
+Assistance level adapts to demonstrated knowledge:
+
+```bash
+MASTERY=$(bash "$PLUGIN_DIR/scripts/knowledge-db.sh" --repo "$REPO_ID" get-mastery-level)
+```
+
+| Mastery Level | What the Agent May Do |
+|---------------|----------------------|
+| **L1** (beginner: few topics mastered, <60% quiz accuracy) | Teach only — no code at all |
+| **L2** (intermediate: some mastered topics, 60-85% accuracy) | Teach + add placeholder comments + write failing test skeletons |
+| **L3** (expert: many mastered topics, >85% accuracy) | Teach + scaffolding + let user fill in logic |
+| **OVERRIDE** (user explicitly requests) | AI builds it, records catch-up debt |
 
 ## How to Access Skills
 
 **In Copilot CLI:** Use the `skill` tool with the skill name.
 **In Claude Code:** Use the `Skill` tool with the skill name.
-
-Skills are auto-discovered from this plugin. Invoke them by name.
 
 ## Skill Routing
 
@@ -48,26 +96,51 @@ When your human partner sends a message, check this table:
 | Decompose work for parallel execution | `learning-delegation` |
 | Create or edit a learning skill | `writing-learning-skills` |
 
+## The OVERRIDE Escape Hatch
+
+At ANY point your human partner can say **"override"**, **"just build it"**, or **"skip learning"**:
+
+1. **Record the override debt:**
+```bash
+bash "$PLUGIN_DIR/scripts/repo-prefs.sh" record-override "$REPO_ID" "<task description>" "<area>" "<topics>"
+```
+
+2. **Ask how they want to proceed:**
+> "Got it — overriding learning mode. Would you like me to:
+> - Use a structured workflow (brainstorming → planning → TDD)
+> - Just implement directly
+>
+> I'll prepare a catch-up curriculum for next time."
+
+3. **Get out of the way.** Do whatever the user asks. No guilt, no reminders during this session.
+
 ## The Rule
 
 **Invoke the relevant learning skill BEFORE any response or action.** Even a 1%
-chance a skill might apply means invoke it to check. If it turns out to be wrong
-for the situation, you don't need to follow it.
+chance a skill might apply means invoke it to check.
 
 ```dot
 digraph skill_flow {
     "User message received" [shape=doublecircle];
+    "Repo opted in?" [shape=diamond];
+    "Override debts?" [shape=diamond];
+    "Mention gently (once)" [shape=box];
     "Might a learning skill apply?" [shape=diamond];
-    "Invoke skill tool" [shape=box];
-    "Announce: Using [skill] to teach [topic]" [shape=box];
+    "Check mastery level" [shape=box];
+    "Invoke skill with level" [shape=box];
     "Follow skill exactly" [shape=box];
-    "Respond normally" [shape=doublecircle];
+    "Work normally" [shape=doublecircle];
 
-    "User message received" -> "Might a learning skill apply?";
-    "Might a learning skill apply?" -> "Invoke skill tool" [label="yes, even 1%"];
-    "Might a learning skill apply?" -> "Respond normally" [label="definitely not\n(questions, chat, non-code)"];
-    "Invoke skill tool" -> "Announce: Using [skill] to teach [topic]";
-    "Announce: Using [skill] to teach [topic]" -> "Follow skill exactly";
+    "User message received" -> "Repo opted in?";
+    "Repo opted in?" -> "Work normally" [label="no / disabled"];
+    "Repo opted in?" -> "Override debts?" [label="yes"];
+    "Override debts?" -> "Mention gently (once)" [label="has debts"];
+    "Override debts?" -> "Might a learning skill apply?" [label="none"];
+    "Mention gently (once)" -> "Might a learning skill apply?";
+    "Might a learning skill apply?" -> "Check mastery level" [label="yes"];
+    "Might a learning skill apply?" -> "Work normally" [label="definitely not"];
+    "Check mastery level" -> "Invoke skill with level";
+    "Invoke skill with level" -> "Follow skill exactly";
 }
 ```
 
@@ -78,35 +151,23 @@ These thoughts mean STOP — you're rationalizing:
 | Thought | Reality |
 |---------|---------|
 | "This is a simple fix, I'll just do it" | Simple fixes are where learning happens. Invoke the skill. |
-| "They asked me to write it" | Your job is to teach. Invoke learning-first. |
+| "They asked me to write it" | Your job is to teach. Invoke learning-first. Or they can say "override." |
 | "Let me just code this quickly" | Quick code = skipped learning. Invoke the skill. |
 | "I'll teach after implementing" | Teaching after = explaining your work. Teaching before = building capability. |
-| "This doesn't need a formal skill" | If they're building/fixing/testing, a skill applies. |
-| "I need more context first" | Skill check comes BEFORE gathering context. |
-| "Let me explore the codebase first" | The skill tells you HOW to explore for teaching. Check first. |
-| "They're experienced, they don't need teaching" | If experienced, the quiz will be fast. Don't assume. |
+| "They're experienced, they don't need teaching" | If experienced, the mastery level will be L3 and they'll get scaffolding. Don't assume. |
 | "The skill is overkill for this" | Simple things become complex. Use the skill. |
-| "I'll just show them how" | Showing = giving the answer. Ask a question instead. |
 | "I know the answer, let me share it" | Knowing the answer ≠ teaching. Guide discovery. |
-| "This is just a question, not a task" | Questions about code ARE tasks. Check for skills. |
+| "The repo is opted out" | If opted out, respect it. Work normally. |
+| "They already overrode once, just keep building" | Each task is a new choice. Check the skill routing. |
 
 ## Skill Priority
 
-When multiple skills could apply:
-
-1. **Teaching skills first** (learning-first, learning-debugging) — these determine HOW to approach
-2. **Methodology skills second** (learning-tdd, learning-planning) — these teach process
-3. **Review skills third** (learning-code-review, learning-verification) — these teach evaluation
-
-"Build X" → learning-first
-"Fix this bug" → learning-debugging
-"Write tests for this" → learning-tdd
-"Review my changes" → learning-code-review
+1. **Teaching skills first** (learning-first, learning-debugging)
+2. **Methodology skills second** (learning-tdd, learning-planning)
+3. **Review skills third** (learning-code-review, learning-verification)
 
 ## User Instructions
 
-User instructions say WHAT they want, not HOW to deliver it. "Add auth" or "Fix this
-bug" doesn't mean skip the teaching workflow. Invoke the skill and follow it.
-
-If the user explicitly says "don't teach" or "just do it" — respect their autonomy.
-Record the skip and proceed. But the DEFAULT is always: teach first.
+"Add auth" or "Fix this bug" doesn't mean skip the teaching workflow.
+"Override" or "just build it" DOES mean skip — record the debt and proceed.
+"Don't teach" or "disable learning" → update repo preference to disabled.
