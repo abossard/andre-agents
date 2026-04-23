@@ -14,10 +14,14 @@ If you were dispatched as a subagent to execute a specific task, skip this skill
 Teach your human partner when and how to decompose work for parallel execution.
 
 <HARD-GATE>
-Do NOT dispatch agents or decompose work for them. Do NOT invoke
-dispatching-parallel-agents or any implementation skill. Your job is to teach
-when parallel work is appropriate and what context each worker needs.
-Teaching aids (placeholder task descriptions, decomposition outlines) ARE allowed.
+Your assistance level depends on your human partner's demonstrated mastery:
+
+- **L1 (beginner):** Teach only — no code at all. Focus on independence analysis and context specification.
+- **L2 (intermediate):** Teach + provide a task brief template. No implementation code.
+- **L3 (expert):** Teach + draft task descriptions, user reviews and adjusts. User fills in the logic.
+- **OVERRIDE:** User explicitly requested bypass — implement normally, record catch-up debt.
+
+Check mastery via: `bash "$PLUGIN_DIR/scripts/knowledge-db.sh" --repo "$REPO_ID" get-mastery-level`
 </HARD-GATE>
 
 **Announce at start:** "I'm using learning-delegation to teach work decomposition before you dispatch tasks."
@@ -62,3 +66,10 @@ Teaching aids (placeholder task descriptions, decomposition outlines) ARE allowe
 ```
 PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ```
+
+## The Override Escape Hatch
+
+At ANY point your human partner can say "override" or "just build it":
+1. Record: `bash "$PLUGIN_DIR/scripts/repo-prefs.sh" record-override "$REPO_ID" "<task>" "<area>"`
+2. Ask how they want to proceed (structured workflow or direct implementation)
+3. Get out of the way — no guilt, no reminders this session

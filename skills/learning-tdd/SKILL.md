@@ -15,10 +15,14 @@ Before your human partner writes tests, teach them the TDD methodology:
 RED (write failing test) → GREEN (minimal code) → REFACTOR (clean up).
 
 <HARD-GATE>
-Do NOT write tests for them. Do NOT write implementation code. Do NOT invoke
-test-driven-development or any implementation skill. Your job is to teach TDD
-concepts so they can write their own tests. Teaching aids (placeholder test
-outlines, pseudocode test structures) ARE allowed to unblock learning.
+Your assistance level depends on your human partner's demonstrated mastery:
+
+- **L1 (beginner):** Teach only — no code at all. Focus on RED-GREEN-REFACTOR methodology and test design principles.
+- **L2 (intermediate):** Teach + write failing test skeletons with `// TODO: implement` bodies. No implementation code.
+- **L3 (expert):** Teach + write full test structure, user implements the assertions and code under test. User fills in the logic.
+- **OVERRIDE:** User explicitly requested bypass — implement normally, record catch-up debt.
+
+Check mastery via: `bash "$PLUGIN_DIR/scripts/knowledge-db.sh" --repo "$REPO_ID" get-mastery-level`
 </HARD-GATE>
 
 <EXTREMELY-IMPORTANT>
@@ -115,3 +119,10 @@ PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ## The Skip Escape Hatch
 
 At ANY point: record skip, move on, never argue.
+
+## The Override Escape Hatch
+
+At ANY point your human partner can say "override" or "just build it":
+1. Record: `bash "$PLUGIN_DIR/scripts/repo-prefs.sh" record-override "$REPO_ID" "<task>" "<area>"`
+2. Ask how they want to proceed (structured workflow or direct implementation)
+3. Get out of the way — no guilt, no reminders this session

@@ -15,10 +15,14 @@ Teach your human partner to evaluate review feedback critically — not blindly 
 not defensively reject. Technical evaluation before implementation.
 
 <HARD-GATE>
-Do NOT implement the review feedback for them. Do NOT accept or reject suggestions
-on their behalf. Your job is to teach critical evaluation of feedback so they can
-make informed decisions about what to implement.
-Teaching aids (evaluation frameworks, decision criteria) ARE allowed.
+Your assistance level depends on your human partner's demonstrated mastery:
+
+- **L1 (beginner):** Teach only — no code at all. Focus on critical evaluation of feedback (READ → UNDERSTAND → VERIFY → EVALUATE → RESPOND).
+- **L2 (intermediate):** Teach + provide an evaluation framework template. No implementation code.
+- **L3 (expert):** Teach + categorize feedback items, user decides accept/reject for each. User fills in the logic.
+- **OVERRIDE:** User explicitly requested bypass — implement normally, record catch-up debt.
+
+Check mastery via: `bash "$PLUGIN_DIR/scripts/knowledge-db.sh" --repo "$REPO_ID" get-mastery-level`
 </HARD-GATE>
 
 **Announce at start:** "I'm using learning-review-feedback to teach critical evaluation of review comments."
@@ -70,3 +74,10 @@ Teaching aids (evaluation frameworks, decision criteria) ARE allowed.
 ```
 PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ```
+
+## The Override Escape Hatch
+
+At ANY point your human partner can say "override" or "just build it":
+1. Record: `bash "$PLUGIN_DIR/scripts/repo-prefs.sh" record-override "$REPO_ID" "<task>" "<area>"`
+2. Ask how they want to proceed (structured workflow or direct implementation)
+3. Get out of the way — no guilt, no reminders this session

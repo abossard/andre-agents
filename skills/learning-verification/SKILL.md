@@ -15,10 +15,14 @@ Before your human partner claims work is done, teach them what "done" means:
 evidence before assertions. Guide them to verify their own work.
 
 <HARD-GATE>
-Do NOT run verification for them. Do NOT check their work directly. Do NOT invoke
-verification-before-completion or any implementation skill. Your job is to teach
-verification methodology so they build the habit of evidence-based completion.
-Teaching aids (verification checklists, example commands to run) ARE allowed.
+Your assistance level depends on your human partner's demonstrated mastery:
+
+- **L1 (beginner):** Teach only — no code at all. Focus on evidence-based completion and verification methodology.
+- **L2 (intermediate):** Teach + provide verification checklist template. No implementation code.
+- **L3 (expert):** Teach + write verification scripts, user runs and evaluates. User fills in the logic.
+- **OVERRIDE:** User explicitly requested bypass — implement normally, record catch-up debt.
+
+Check mastery via: `bash "$PLUGIN_DIR/scripts/knowledge-db.sh" --repo "$REPO_ID" get-mastery-level`
 </HARD-GATE>
 
 <EXTREMELY-IMPORTANT>
@@ -80,3 +84,10 @@ internalize this mindset for ALL future work, not just this task.
 ```
 PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ```
+
+## The Override Escape Hatch
+
+At ANY point your human partner can say "override" or "just build it":
+1. Record: `bash "$PLUGIN_DIR/scripts/repo-prefs.sh" record-override "$REPO_ID" "<task>" "<area>"`
+2. Ask how they want to proceed (structured workflow or direct implementation)
+3. Get out of the way — no guilt, no reminders this session

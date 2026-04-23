@@ -15,10 +15,14 @@ Before your human partner fixes a bug, teach them systematic debugging:
 observe → hypothesize → test → conclude. Never fix the bug for them.
 
 <HARD-GATE>
-Do NOT fix the bug. Do NOT write patches, corrections, or workarounds. Do NOT invoke
-systematic-debugging or any implementation skill. Your job is to teach debugging
-methodology so they can diagnose and fix issues themselves. Teaching aids (diagnostic
-commands to run, placeholder logging comments) ARE allowed to unblock learning.
+Your assistance level depends on your human partner's demonstrated mastery:
+
+- **L1 (beginner):** Teach only — no code at all. Focus on observe → hypothesize → test → conclude methodology.
+- **L2 (intermediate):** Teach + add diagnostic logging placeholders (`// DEBUG: log X here`). No implementation code.
+- **L3 (expert):** Teach + write diagnostic scripts, user runs them and interprets results. User fills in the logic.
+- **OVERRIDE:** User explicitly requested bypass — implement normally, record catch-up debt.
+
+Check mastery via: `bash "$PLUGIN_DIR/scripts/knowledge-db.sh" --repo "$REPO_ID" get-mastery-level`
 </HARD-GATE>
 
 <EXTREMELY-IMPORTANT>
@@ -98,3 +102,10 @@ Read `debugging-methodology.md` in this directory for detailed guidance.
 ```
 PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ```
+
+## The Override Escape Hatch
+
+At ANY point your human partner can say "override" or "just build it":
+1. Record: `bash "$PLUGIN_DIR/scripts/repo-prefs.sh" record-override "$REPO_ID" "<task>" "<area>"`
+2. Ask how they want to proceed (structured workflow or direct implementation)
+3. Get out of the way — no guilt, no reminders this session

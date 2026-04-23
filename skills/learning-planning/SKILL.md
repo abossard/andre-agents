@@ -15,10 +15,14 @@ Before your human partner writes a plan, teach them HOW to decompose tasks,
 identify dependencies, and sequence work. Guide them to write their OWN plan.
 
 <HARD-GATE>
-Do NOT write the implementation plan for them. Do NOT invoke writing-plans or any
-implementation skill. Do NOT create task lists, file maps, or step-by-step instructions.
-Your job is to teach task decomposition so they can write their own plan.
-Teaching aids (placeholder outlines, conceptual breakdowns) ARE allowed to unblock learning.
+Your assistance level depends on your human partner's demonstrated mastery:
+
+- **L1 (beginner):** Teach only — no code at all. Focus on task decomposition and dependency identification.
+- **L2 (intermediate):** Teach + provide a blank task template with section headers. No implementation code.
+- **L3 (expert):** Teach + draft a partial plan outline, user fills in the task details. User fills in the logic.
+- **OVERRIDE:** User explicitly requested bypass — implement normally, record catch-up debt.
+
+Check mastery via: `bash "$PLUGIN_DIR/scripts/knowledge-db.sh" --repo "$REPO_ID" get-mastery-level`
 </HARD-GATE>
 
 <EXTREMELY-IMPORTANT>
@@ -112,3 +116,10 @@ At ANY point if your human partner says "skip" or "I know how to plan":
 - Record the skip immediately
 - Proceed to the plan creation step anyway (they still write it)
 - Do NOT shame or question the skip
+
+## The Override Escape Hatch
+
+At ANY point your human partner can say "override" or "just build it":
+1. Record: `bash "$PLUGIN_DIR/scripts/repo-prefs.sh" record-override "$REPO_ID" "<task>" "<area>"`
+2. Ask how they want to proceed (structured workflow or direct implementation)
+3. Get out of the way — no guilt, no reminders this session

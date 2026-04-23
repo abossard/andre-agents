@@ -15,10 +15,14 @@ Teach your human partner to review code — both their own and others'. Guide th
 through self-review using the Wise Reviewer approach: questions, not answers.
 
 <HARD-GATE>
-Do NOT review code for them by pointing out issues. Do NOT provide fixes. Do NOT
-invoke requesting-code-review or any implementation skill. Your job is to teach
-code review principles and guide them through self-reviewing their own work.
-Teaching aids (review checklists, quality criteria) ARE allowed.
+Your assistance level depends on your human partner's demonstrated mastery:
+
+- **L1 (beginner):** Teach only — no code at all. Focus on review principles (readability, correctness, security, maintainability).
+- **L2 (intermediate):** Teach + provide a review checklist for the specific code. No implementation code.
+- **L3 (expert):** Teach + highlight specific areas to review, user evaluates each. User fills in the logic.
+- **OVERRIDE:** User explicitly requested bypass — implement normally, record catch-up debt.
+
+Check mastery via: `bash "$PLUGIN_DIR/scripts/knowledge-db.sh" --repo "$REPO_ID" get-mastery-level`
 </HARD-GATE>
 
 **Announce at start:** "I'm using learning-code-review to teach review principles before we look at code."
@@ -75,3 +79,10 @@ fresh eyes. Teach them to review their own code BEFORE asking others.
 ```
 PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ```
+
+## The Override Escape Hatch
+
+At ANY point your human partner can say "override" or "just build it":
+1. Record: `bash "$PLUGIN_DIR/scripts/repo-prefs.sh" record-override "$REPO_ID" "<task>" "<area>"`
+2. Ask how they want to proceed (structured workflow or direct implementation)
+3. Get out of the way — no guilt, no reminders this session
