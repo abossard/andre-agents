@@ -28,33 +28,33 @@ KDB="$PROJECT_DIR/scripts/knowledge-db.sh"
 echo "=== achievements.sh tests ==="
 
 # Setup
-"$KDB" init > /dev/null
+"$KDB" --repo test-repo init > /dev/null
 
 # Test: award
 echo "--- award ---"
-"$ACH" award "explorer-myrepo" "Explorer: myrepo" "First task in myrepo" "Add JWT auth"
-result=$("$ACH" list | jq 'length')
+"$ACH" --repo test-repo award "explorer-myrepo" "Explorer: myrepo" "First task in myrepo" "Add JWT auth"
+result=$("$ACH" --repo test-repo list | jq 'length')
 assert_eq "one achievement" "1" "$result"
 
 # Test: check (exists)
 echo "--- check ---"
-result=$("$ACH" check "explorer-myrepo")
+result=$("$ACH" --repo test-repo check "explorer-myrepo")
 assert_eq "achievement exists" "true" "$result"
 
 # Test: check (not exists)
-result=$("$ACH" check "nonexistent")
+result=$("$ACH" --repo test-repo check "nonexistent")
 assert_eq "achievement not exists" "false" "$result"
 
 # Test: duplicate award is idempotent
 echo "--- idempotent award ---"
-"$ACH" award "explorer-myrepo" "Explorer: myrepo" "First task" "context"
-result=$("$ACH" list | jq 'length')
+"$ACH" --repo test-repo award "explorer-myrepo" "Explorer: myrepo" "First task" "context"
+result=$("$ACH" --repo test-repo list | jq 'length')
 assert_eq "still one achievement (no duplicate)" "1" "$result"
 
 # Test: list multiple
 echo "--- list ---"
-"$ACH" award "mastered-jwt" "Mastered: JWT" "Deep understanding of JWT" "JWT Auth task"
-result=$("$ACH" list | jq 'length')
+"$ACH" --repo test-repo award "mastered-jwt" "Mastered: JWT" "Deep understanding of JWT" "JWT Auth task"
+result=$("$ACH" --repo test-repo list | jq 'length')
 assert_eq "two achievements" "2" "$result"
 
 echo ""

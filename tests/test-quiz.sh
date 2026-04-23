@@ -28,23 +28,23 @@ KDB="$PROJECT_DIR/scripts/knowledge-db.sh"
 echo "=== quiz.sh tests ==="
 
 # Setup
-"$KDB" init > /dev/null
-"$KDB" upsert-topic "jwt-basics" "auth" "JWT Basics" "global" 1
+"$KDB" --repo test-repo init > /dev/null
+"$KDB" --repo test-repo upsert-topic "jwt-basics" "auth" "JWT Basics" "global" 1
 
 # Test: record correct answer
 echo "--- record ---"
-"$QUIZ" record "jwt-basics" "What does JWT stand for?" "JSON Web Token" 1 "Correct!" 1
-result=$("$QUIZ" history "jwt-basics" | jq 'length')
+"$QUIZ" --repo test-repo record "jwt-basics" "What does JWT stand for?" "JSON Web Token" 1 "Correct!" 1
+result=$("$QUIZ" --repo test-repo history "jwt-basics" | jq 'length')
 assert_eq "one result recorded" "1" "$result"
 
 # Test: record wrong answer
-"$QUIZ" record "jwt-basics" "What is the header for?" "Authentication" 0 "Not quite — it contains metadata" 1
-result=$("$QUIZ" history "jwt-basics" | jq 'length')
+"$QUIZ" --repo test-repo record "jwt-basics" "What is the header for?" "Authentication" 0 "Not quite — it contains metadata" 1
+result=$("$QUIZ" --repo test-repo history "jwt-basics" | jq 'length')
 assert_eq "two results recorded" "2" "$result"
 
 # Test: stats
 echo "--- stats ---"
-result=$("$QUIZ" stats)
+result=$("$QUIZ" --repo test-repo stats)
 total=$(echo "$result" | jq -r '.[0].total')
 correct=$(echo "$result" | jq -r '.[0].correct')
 assert_eq "total questions" "2" "$total"
@@ -52,14 +52,14 @@ assert_eq "correct answers" "1" "$correct"
 
 # Test: topic-stats
 echo "--- topic-stats ---"
-result=$("$QUIZ" topic-stats "jwt-basics")
+result=$("$QUIZ" --repo test-repo topic-stats "jwt-basics")
 pct=$(echo "$result" | jq -r '.[0].pct_correct')
 assert_eq "50% correct" "50.0" "$pct"
 
 # Test: answer with quotes (injection safety)
 echo "--- injection safety ---"
-"$QUIZ" record "jwt-basics" "What's the token format?" "It's base64" 1 "That's right" 1
-result=$("$QUIZ" history "jwt-basics" | jq 'length')
+"$QUIZ" --repo test-repo record "jwt-basics" "What's the token format?" "It's base64" 1 "That's right" 1
+result=$("$QUIZ" --repo test-repo history "jwt-basics" | jq 'length')
 assert_eq "quote in answer handled" "3" "$result"
 
 echo ""

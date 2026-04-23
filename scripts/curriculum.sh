@@ -4,10 +4,16 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/db-helper.sh"
 
+# Auto-detect repo_id: git remote URL or folder name
+_detect_repo_id() {
+    git remote get-url origin 2>/dev/null || basename "$(pwd)"
+}
+
 usage() {
-    echo "Usage: curriculum.sh <command> [args...]"
+    echo "Usage: curriculum.sh [--repo REPO_ID] <command> [args...]"
+    echo "  If --repo is omitted, auto-detects from git remote or folder name."
     echo "Commands:"
-    echo "  create <task_id> <repo_path> <description> <modules_json>"
+    echo "  create <task_id> <repo_id> <description> <modules_json>"
     echo "  get-state <task_id>                   Full curriculum state (JSON)"
     echo "  get-current <task_id>                  Current module (JSON)"
     echo "  advance <task_id>                      Move to next module"
@@ -17,14 +23,22 @@ usage() {
     exit 1
 }
 
+# Parse --repo flag
+REPO_ID=""
+if [ "${1:-}" = "--repo" ]; then
+    REPO_ID="$2"
+    shift 2
+fi
+[ -z "$REPO_ID" ] && REPO_ID=$(_detect_repo_id)
+
 cmd_create() {
-    local task_id="$1" repo_path="$2" description="$3" modules_json="$4"
+    local task_id="$1" repo_id_arg="$2" description="$3" modules_json="$4"
     db_ensure_init
     local safe_task safe_repo safe_desc
     safe_task=$(db_safe_value "$task_id")
-    safe_repo=$(db_safe_value "$repo_path")
+    safe_repo=$(db_safe_value "$REPO_ID")
     safe_desc=$(db_safe_value "$description")
-    db_exec "INSERT INTO curricula (task_id, repo_path, task_description)
+    db_exec "INSERT INTO curricula (task_id, repo_id, task_description)
              VALUES ('$safe_task', '$safe_repo', '$safe_desc');"
 
     # Parse JSON modules and insert each

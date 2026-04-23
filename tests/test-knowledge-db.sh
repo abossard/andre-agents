@@ -28,35 +28,35 @@ echo "=== knowledge-db.sh tests ==="
 
 # Test: init
 echo "--- init ---"
-result=$("$KDB" init 2>&1)
+result=$("$KDB" --repo test-repo init 2>&1)
 assert_eq "init succeeds" "initialized" "$result"
 
 # Test: upsert-topic (new)
 echo "--- upsert-topic ---"
-"$KDB" upsert-topic "jwt-basics" "authentication" "JWT Basics" "global" 1
-result=$("$KDB" get-topic "jwt-basics" | jq -r '.[0].title')
+"$KDB" --repo test-repo upsert-topic "jwt-basics" "authentication" "JWT Basics" "global" 1
+result=$("$KDB" --repo test-repo get-topic "jwt-basics" | jq -r '.[0].title')
 assert_eq "upserted topic title" "JWT Basics" "$result"
 
 # Test: upsert-topic (update depth)
-"$KDB" upsert-topic "jwt-basics" "authentication" "JWT Basics" "global" 2
-result=$("$KDB" get-topic "jwt-basics" | jq -r '.[0].depth_level')
+"$KDB" --repo test-repo upsert-topic "jwt-basics" "authentication" "JWT Basics" "global" 2
+result=$("$KDB" --repo test-repo get-topic "jwt-basics" | jq -r '.[0].depth_level')
 assert_eq "updated depth level" "2" "$result"
 
 # Test: update-topic-status
 echo "--- update-topic-status ---"
-"$KDB" update-topic-status "jwt-basics" "mastered"
-result=$("$KDB" get-topic "jwt-basics" | jq -r '.[0].status')
+"$KDB" --repo test-repo update-topic-status "jwt-basics" "mastered"
+result=$("$KDB" --repo test-repo get-topic "jwt-basics" | jq -r '.[0].status')
 assert_eq "status updated to mastered" "mastered" "$result"
 
 # Test: update-repo-knowledge
 echo "--- update-repo-knowledge ---"
-"$KDB" update-repo-knowledge "/tmp/myrepo" "src/auth/" "basic"
-result=$("$KDB" get-repo-knowledge "/tmp/myrepo" | jq -r '.[0].familiarity')
+"$KDB" --repo test-repo update-repo-knowledge "src/auth/" "basic"
+result=$("$KDB" --repo test-repo get-repo-knowledge "src/auth/" | jq -r '.[0].familiarity')
 assert_eq "repo knowledge set" "basic" "$result"
 
 # Test: get-profile (JSON output)
 echo "--- get-profile ---"
-result=$("$KDB" get-profile)
+result=$("$KDB" --repo test-repo get-profile)
 echo "$result" | jq -e '.topics | length > 0' > /dev/null 2>&1
 assert_eq "profile has topics" "0" "$?"
 
