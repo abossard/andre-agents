@@ -42,8 +42,17 @@ CREATE TABLE IF NOT EXISTS quiz_results (
     feedback TEXT,
     depth_level INTEGER NOT NULL DEFAULT 1,
     asked_at TEXT NOT NULL DEFAULT (datetime('now')),
+    session_id TEXT,
+    response_time_ms INTEGER,
+    hint_level_used INTEGER DEFAULT 0,
+    attempt_number INTEGER DEFAULT 1,
+    quiz_kind TEXT DEFAULT 'recall',
+    confidence_prediction INTEGER,
     CHECK (correct IN (0, 1)),
-    CHECK (depth_level BETWEEN 1 AND 3)
+    CHECK (depth_level BETWEEN 1 AND 3),
+    CHECK (hint_level_used BETWEEN 0 AND 6),
+    CHECK (quiz_kind IN ('recall', 'apply', 'transfer', 'explain')),
+    CHECK (confidence_prediction IS NULL OR confidence_prediction BETWEEN 1 AND 5)
 );
 
 CREATE TABLE IF NOT EXISTS achievements (
@@ -101,4 +110,35 @@ CREATE TABLE IF NOT EXISTS override_debts (
     caught_up_at TEXT,
     status TEXT NOT NULL DEFAULT 'pending',
     CHECK (status IN ('pending', 'caught_up', 'dismissed'))
+);
+
+-- Learning sessions: tracks time, fatigue, quality per work session
+CREATE TABLE IF NOT EXISTS learning_sessions (
+    id TEXT PRIMARY KEY,
+    repo_id TEXT NOT NULL,
+    started_at TEXT NOT NULL DEFAULT (datetime('now')),
+    ended_at TEXT,
+    duration_minutes INTEGER,
+    active_minutes INTEGER,
+    topics_touched TEXT,
+    break_count INTEGER DEFAULT 0,
+    fatigue_score REAL,
+    self_rated_quality INTEGER,
+    notes TEXT,
+    CHECK (self_rated_quality IS NULL OR self_rated_quality BETWEEN 1 AND 5)
+);
+
+-- Spaced repetition state per (repo, topic) using SM-2
+CREATE TABLE IF NOT EXISTS topic_review_state (
+    repo_id TEXT NOT NULL,
+    topic_id TEXT NOT NULL,
+    ease_factor REAL NOT NULL DEFAULT 2.5,
+    interval_days REAL NOT NULL DEFAULT 1,
+    last_reviewed_at TEXT,
+    next_review_at TEXT,
+    correct_streak INTEGER DEFAULT 0,
+    lapse_count INTEGER DEFAULT 0,
+    transfer_passed INTEGER DEFAULT 0,
+    retention_passed_at TEXT,
+    PRIMARY KEY (repo_id, topic_id)
 );
