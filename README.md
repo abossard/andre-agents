@@ -80,12 +80,18 @@ codebase and only activates when the AI agent starts a session.
 
 ### Step 1: Install for your platform
 
-#### GitHub Copilot CLI
+#### GitHub Copilot CLI — from terminal
 
 ```bash
-# Install directly from GitHub (no clone needed)
 copilot plugin install abossard/andre-agents
 ```
+
+#### GitHub Copilot CLI — from inside a session
+
+```
+/plugin
+```
+Then select "Install" and enter `abossard/andre-agents`.
 
 #### Claude Code
 
@@ -102,7 +108,13 @@ claude --plugin-dir ~/learning-first
 
 ### Step 2: Verify it works
 
-Start a new session and ask the agent to build something:
+Start a new session and check the plugin is loaded:
+
+```
+/env
+```
+
+You should see `learning-first` in the plugins list. Then ask the agent to build something:
 
 ```
 > Add authentication to the API
@@ -115,10 +127,9 @@ The agent will teach you about auth patterns, quiz your understanding, and guide
 to propose your own design — instead of writing code for you.
 
 **Not triggering?** Check these steps:
-1. Verify it's installed: `copilot plugin list` should show `learning-first`
+1. Run `/env` to verify `learning-first` appears in loaded plugins
 2. **Start a new session** — hooks only fire on session start
-3. If skills still don't auto-activate, the `using-learning-first` skill should be
-   visible in the available skills list. You can invoke it explicitly:
+3. If skills still don't auto-activate, invoke explicitly:
    ```
    > use learning-first to teach me about this codebase
    ```
@@ -126,10 +137,16 @@ to propose your own design — instead of writing code for you.
 
 ### Updating
 
-#### GitHub Copilot CLI
+#### GitHub Copilot CLI — from terminal
 ```bash
 copilot plugin update learning-first
 ```
+
+#### GitHub Copilot CLI — from inside a session
+```
+/plugin
+```
+Then select "Update" and choose `learning-first`.
 
 #### Claude Code (local clone)
 ```bash
@@ -144,6 +161,8 @@ Changes take effect on the next session.
 ```bash
 copilot plugin uninstall learning-first
 ```
+
+Or from inside a session: `/plugin` → "Uninstall" → `learning-first`
 
 #### Claude Code
 Remove the `--plugin-dir` flag from your launch command.
