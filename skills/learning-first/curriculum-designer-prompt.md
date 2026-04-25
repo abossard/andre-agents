@@ -42,7 +42,7 @@ Task tool (general-purpose, model: opus or gpt-5.4):
 
        Not every task needs all types. A simple bug fix might need only a) and d).
 
-    4. **Output modules JSON** for curriculum.sh:
+    4. **Output modules JSON** for `node "$PLUGIN_DIR/src/cli.js" curriculum create`:
 
     ```json
     [

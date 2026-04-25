@@ -48,7 +48,7 @@ Not every task needs all 5 types. A simple bug fix might only need modules 1 and
 
 ### Step 5: Format for Script
 
-Create the modules JSON for `curriculum.sh create`:
+Create the modules JSON for `node "$PLUGIN_DIR/src/cli.js" curriculum create`:
 
 ```json
 [
@@ -86,7 +86,7 @@ Always ask the user directly for quiz answers (use `ask_user` tool if available,
 - 2-3 questions per module
 - ≥ 66% correct at current level → advance to next module
 - < 66% correct → re-teach key points, ask 1-2 more questions, then move on
-- Record ALL results via `quiz.sh record`
+- Record ALL results via `node "$PLUGIN_DIR/src/cli.js" quiz record`
 
 ## Graduated Help Model (7 Levels)
 
@@ -104,7 +104,7 @@ skip levels except Level 6 (terminal).
 | 5 | Co-construction | Walk through part, leave the rest | Can't complete their half |
 | 6 | Full solution + postmortem | Show answer, require re-explanation in their own words | Terminal — schedule spaced review |
 
-Record the hint level actually used via `quiz.sh record ... hint_level_used`.
+Record the hint level actually used via `node "$PLUGIN_DIR/src/cli.js" quiz record ... hint_level_used`.
 
 ## Productive Struggle Guard
 
@@ -117,12 +117,13 @@ memory more than passive reception.
 
 At the start of each teaching session:
 
-1. Call `session-tracker.sh start` and capture the `session_id`.
-2. Call `review-scheduler.sh next-due --limit 3` to get topics due for review.
+1. Call `node "$PLUGIN_DIR/src/cli.js" session start` and capture the `session_id`.
+2. Call `node "$PLUGIN_DIR/src/cli.js" review next-due --limit 3` to get topics due for review.
 3. **Interleave 1-2 short reviews before new material** (testing effect,
    Karpicke & Roediger). A review is a 1-question quiz at the topic's current
-   depth level, recorded via `quiz.sh record`. Then update review state via
-   `review-scheduler.sh record-review <topic_id> <easy|good|hard|lapse>`.
+   depth level, recorded via `node "$PLUGIN_DIR/src/cli.js" quiz record`. Then
+   update review state via
+   `node "$PLUGIN_DIR/src/cli.js" review record <topic_id> <easy|good|hard|lapse>`.
 4. Only then proceed to the new module.
 
 ## Fatigue Management
@@ -130,7 +131,7 @@ At the start of each teaching session:
 Pomodoro-style pacing. After each quiz call:
 
 ```
-node src/cli.js session fatigue <session_id>
+node "$PLUGIN_DIR/src/cli.js" session fatigue <session_id>
 ```
 
 If `break_suggested` is `true` (fatigue_score > 0.6 OR active_minutes > 25):
@@ -143,14 +144,15 @@ If `break_suggested` is `true` (fatigue_score > 0.6 OR active_minutes > 25):
 Calibration — users predict how well they know a thing before being tested.
 
 - **After each quiz question**: ask the user to rate their confidence 1-5
-  **before** seeing the result. Pass to `quiz.sh record` via
+  **before** seeing the result. Pass to
+  `node "$PLUGIN_DIR/src/cli.js" quiz record` via
   `confidence_prediction`. Compare to `correct` to surface over/underconfidence.
 - **At session end**: ask two questions, store via
-  `session-tracker.sh add-note`:
+  `node "$PLUGIN_DIR/src/cli.js" session note`:
   1. "What clicked today?"
   2. "What's still fuzzy?"
-- Also collect `session-tracker.sh rate <session_id> <1-5>` for self-rated
-  session quality.
+- Also collect `node "$PLUGIN_DIR/src/cli.js" session rate <session_id> <1-5>`
+  for self-rated session quality.
 
 ## Mastery Criteria (Upgraded)
 
@@ -165,4 +167,4 @@ A topic is only marked `mastered` when **ALL THREE** conditions hold:
    short-term recall masquerading as mastery (forgetting curve, Ebbinghaus).
 
 Only when all three pass, update via
-`knowledge-db.sh update-topic-status <topic_id> mastered`.
+`node "$PLUGIN_DIR/src/cli.js" topic status <topic_id> mastered`.

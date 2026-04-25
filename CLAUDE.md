@@ -33,6 +33,19 @@ The agent never writes implementation code — it teaches, quizzes, guides, and 
 User progress stored in `~/.learning-first/knowledge.db` (SQLite).
 Override with `LEARNING_FIRST_DB` environment variable.
 
+## Architecture (v0.3.0)
+
+Plugin is implemented in Node.js (≥ 22) with **zero npm dependencies**:
+
+- `src/db.js` — shared `node:sqlite` wrapper (schema bootstrap, query helpers)
+- `src/cli.js` — unified CLI invoked by every skill/command:
+  `node "$PLUGIN_DIR/src/cli.js" <module> <command> [...]`
+  Replaces all former `scripts/*.sh` files (now archived in `scripts/legacy/`).
+- `src/server.js` — optional HTTP server (`npm start`, default port `3142`)
+  for the web companion knowledge base.
+
+Run tests with `npm test` (Node `node:test` runner). Prerequisite: Node.js ≥ 22.
+
 ## The Iron Law
 
 **NO IMPLEMENTATION CODE. TEACHING AIDS ARE OK.**

@@ -1,5 +1,12 @@
 # Deep Research Synthesis: Effective Mentoring, Learning Science & Helping Struggling Learners
 
+> **Implementation note (v0.3.0):** Recommendations below originally proposed
+> standalone `*.sh` helpers (e.g. `review-scheduler.sh`, `quiz.sh`,
+> `knowledge-db.sh`). They are all implemented as subcommands of the unified
+> CLI in `src/cli.js` — `node "$PLUGIN_DIR/src/cli.js" review …`,
+> `… quiz …`, `… topic …` etc. Historical script names are kept here for
+> traceability with the original research notes.
+
 Consolidated findings from three parallel research threads. Detailed source reports:
 - `developer-mentoring-research-report.md` — mentoring + graduated help
 - `learning-research-report.md` — learning science + session duration

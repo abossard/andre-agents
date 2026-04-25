@@ -1,7 +1,7 @@
 # Learning-First Web Companion — Design Spec
 
 > **Date:** 2026-04-25
-> **Status:** Approved
+> **Status:** Implemented (v0.3.0) — server lives in `src/server.js`, launch with `npm start`
 > **Decisions:** From user input on 2026-04-25
 
 ## Vision
@@ -75,11 +75,14 @@ On future sessions: re-verify stale content (files changed since last check)
 
 ### Server
 
-Node.js localhost (~200 LoC), same pattern as superpowers visual companion:
-- Serves from `~/.learning-first/knowledge-base/<repo>/`
-- SSE for live updates when agent adds content during a session
-- Port: 3142 (learning-first)
-- Auto-opens default browser
+Implemented in `src/server.js` (Node.js, ~600 LoC, zero npm deps — uses
+`node:http` + `node:sqlite` only). Launch with `npm start`.
+
+- Serves static pages from `~/.learning-first/knowledge-base/<repo>/`
+- REST API + SSE stream backed by the shared `src/db.js` SQLite layer
+- Default port: `3142` (override with `--port`)
+- Optional Unix-domain-socket mode via `--uds` (`~/.learning-first/server.sock`)
+- The CLI works fully without the server; the server is opt-in.
 
 ### Interactive Elements (V1)
 

@@ -47,7 +47,7 @@ You MUST create a task for each of these items and complete them in order:
 
 1. **Initialize & greet** — init DB, show achievements, welcome your human partner
 2. **Internal analysis** — silently analyze the codebase and task (do NOT share raw analysis)
-3. **Generate curriculum** — build learning modules, register with curriculum.sh
+3. **Generate curriculum** — build learning modules, register with `node "$PLUGIN_DIR/src/cli.js" curriculum create`
 4. **Teach + Quiz loop** — for each module: teach → quiz → evaluate → record
 5. **Design checkpoint** — guide your human partner to propose their own design
 6. **Record & celebrate** — save progress, award achievements

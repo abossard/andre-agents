@@ -419,11 +419,26 @@ Skills and commands invoke the CLI via `node "$PLUGIN_DIR/src/cli.js" ...`. The
 original bash scripts are preserved in `scripts/legacy/` for the legacy test
 suites and as an executable reference.
 
+## Web Companion
+
+The plugin ships with an optional knowledge-base browser. Launch it from the plugin
+directory:
+
+```bash
+npm start
+```
+
+This starts `src/server.js` on `http://localhost:3142`, serving per-repo pages from
+`~/.learning-first/knowledge-base/<repo>/` plus a small REST API and SSE stream backed
+by the same SQLite database the CLI uses. The CLI works fully without it — the server
+is opt-in.
+
 ## Configuration
 
 | Environment Variable | Default | Description |
 |---------------------|---------|-------------|
 | `LEARNING_FIRST_DB` | `~/.learning-first/knowledge.db` | Knowledge database path |
+| `npm start` (port)  | `3142`                           | Web companion HTTP port (override with `--port`) |
 
 ## Project Structure
 
