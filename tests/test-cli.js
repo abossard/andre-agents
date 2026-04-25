@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 // tests/test-cli.js — Node.js test suite for src/cli.js (zero deps).
-// Mirrors and extends the bash test suites under tests/test-*.sh.
 process.removeAllListeners('warning');
 
 const { describe, it, before, after } = require('node:test');

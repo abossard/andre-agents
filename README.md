@@ -8,6 +8,8 @@ agent from "I'll build it for you" into "Let me help you understand it so you ca
 
 > *"The best AI assistant isn't the one that writes the most code — it's the one that makes you need it less."*
 
+![Learning-First Dashboard](docs/screenshots/dashboard-top.png)
+
 ---
 
 ## What It Feels Like
@@ -219,7 +221,8 @@ codebase and only activates when the AI agent starts a session.
 
 ### Prerequisites
 
-- **Node.js** ≥ 22 (the CLI uses the built-in `node:sqlite` and `node:test` modules — zero npm dependencies)
+- **Node.js** ≥ 22 (uses built-in `node:sqlite` and `node:test` — zero npm dependencies)
+- **Windows:** requires Git Bash or WSL for the SessionStart hook
 
 ### Step 1: Install for your platform
 
@@ -390,13 +393,7 @@ Full research reports in `docs/research/`.
 ## Testing
 
 ```bash
-# Node.js test suite (preferred)
 npm test
-
-# Legacy bash test suites — still supported, exercise scripts/legacy/*.sh
-npm run test:legacy
-# or directly:
-for f in tests/test-*.sh; do bash "$f" || exit 1; done
 ```
 
 Pressure test scenarios in `tests/pressure-scenarios/` validate that skills
@@ -410,14 +407,11 @@ The plugin is implemented in Node.js (≥ 22) with **zero npm dependencies**:
   query/exec helpers, repo detection.
 - **`src/cli.js`** — Unified CLI (`node src/cli.js <module> <command> [--repo R] ...`).
   Modules: `init | profile | topic | repo-knowledge | quiz | achievement |
-  curriculum | repo | review | session`. Replaces the bash scripts that previously
-  lived in `scripts/`.
+  curriculum | repo | review | session`.
 - **`src/server.js`** — Optional HTTP server (`npm start`) for browser dashboards.
   The CLI works fully without it.
 
-Skills and commands invoke the CLI via `node "$PLUGIN_DIR/src/cli.js" ...`. The
-original bash scripts are preserved in `scripts/legacy/` for the legacy test
-suites and as an executable reference.
+Skills and commands invoke the CLI via `node "$PLUGIN_DIR/src/cli.js" ...`.
 
 ## Web Companion
 
@@ -432,6 +426,11 @@ This starts `src/server.js` on `http://localhost:3142`, serving per-repo pages f
 `~/.learning-first/knowledge-base/<repo>/` plus a small REST API and SSE stream backed
 by the same SQLite database the CLI uses. The CLI works fully without it — the server
 is opt-in.
+
+Your persistent knowledge base grows with every session — achievements, quiz performance,
+codebase familiarity, prediction cards, and interactive checklists:
+
+![Knowledge Base Dashboard](docs/screenshots/dashboard-full.png)
 
 ## Configuration
 
@@ -452,9 +451,7 @@ is opt-in.
 │   ├── db.js             #   SQLite wrapper (node:sqlite)
 │   ├── cli.js            #   Unified CLI used by all skills/commands
 │   └── server.js         #   Optional HTTP server (npm start)
-├── scripts/
-│   └── legacy/           # Deprecated bash scripts (kept for legacy bash tests)
-├── skills/               # Learning skills (10)
+├── skills/               # Learning skills (9 + 1 meta-router)
 │   ├── using-learning-first/  # Router — activates on every message
 │   ├── learning-first/        # Core teaching + prompt templates
 │   ├── learning-tdd/

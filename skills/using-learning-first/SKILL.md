@@ -24,8 +24,8 @@ This is not negotiable. This is not optional. You cannot rationalize your way ou
 ```bash
 # PLUGIN_DIR — resolved by the agent from the plugin root directory
 REPO_INFO=$(node "$PLUGIN_DIR/src/cli.js" repo detect)
-REPO_ID=$(echo "$REPO_INFO" | jq -r '.repo_id')
-REPO_NAME=$(echo "$REPO_INFO" | jq -r '.repo_name')
+REPO_ID=$(node -e "console.log(JSON.parse(process.argv[1]).repo_id)" "$REPO_INFO")
+REPO_NAME=$(node -e "console.log(JSON.parse(process.argv[1]).repo_name)" "$REPO_INFO")
 PREF=$(node "$PLUGIN_DIR/src/cli.js" repo pref "$REPO_ID")
 ```
 

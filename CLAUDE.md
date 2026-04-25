@@ -40,7 +40,6 @@ Plugin is implemented in Node.js (≥ 22) with **zero npm dependencies**:
 - `src/db.js` — shared `node:sqlite` wrapper (schema bootstrap, query helpers)
 - `src/cli.js` — unified CLI invoked by every skill/command:
   `node "$PLUGIN_DIR/src/cli.js" <module> <command> [...]`
-  Replaces all former `scripts/*.sh` files (now archived in `scripts/legacy/`).
 - `src/server.js` — optional HTTP server (`npm start`, default port `3142`)
   for the web companion knowledge base.
 

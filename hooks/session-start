@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# SessionStart hook for learning-first plugin
+# SessionStart hook for learning-first plugin.
 #
+# Injects the using-learning-first meta-routing skill into the session context.
 # Optional: an HTTP server is available via `node src/server.js` (or `npm start`)
 # for browser-based dashboards. The CLI (`node src/cli.js`) works without it —
 # starting the server is purely optional.
@@ -10,10 +11,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-# Read the meta routing skill (like superpowers reads using-superpowers)
 learning_first_content=$(cat "${PLUGIN_ROOT}/skills/using-learning-first/SKILL.md" 2>&1 || echo "Error reading using-learning-first skill")
 
-# Escape string for JSON embedding
 escape_for_json() {
     local s="$1"
     s="${s//\\/\\\\}"
@@ -27,7 +26,6 @@ escape_for_json() {
 learning_first_escaped=$(escape_for_json "$learning_first_content")
 session_context="<EXTREMELY_IMPORTANT>\nYou have learning-first skills.\n\n**Below is the full content of your 'learning-first:using-learning-first' skill - your introduction to using learning skills. For all other skills, use the 'Skill' tool:**\n\n${learning_first_escaped}\n\n</EXTREMELY_IMPORTANT>"
 
-# Output context injection — multi-platform support
 if [ -n "${CURSOR_PLUGIN_ROOT:-}" ]; then
   printf '{\n  "additional_context": "%s"\n}\n' "$session_context"
 elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -z "${COPILOT_CLI:-}" ]; then

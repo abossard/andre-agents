@@ -194,7 +194,7 @@ Present the curriculum overview:
 
 Register with scripts:
 ```bash
-node "$PLUGIN_DIR/src/cli.js" curriculum create "<task-id>" "<repo-path>" "<description>" '<modules-json>'
+node "$PLUGIN_DIR/src/cli.js" --repo "$REPO_ID" curriculum create "<task-id>" "<description>" '<modules-json>'
 ```
 
 ### 4. Teach + Quiz Loop (Socratic Method)

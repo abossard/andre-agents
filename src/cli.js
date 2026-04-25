@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-// src/cli.js — Unified Node.js CLI for the learning-first plugin.
-// Replaces the bash scripts in scripts/. Zero npm dependencies.
+// src/cli.js — Unified Node.js CLI for the learning-first plugin. Zero npm dependencies.
 process.removeAllListeners('warning');
 
 const crypto = require('node:crypto');

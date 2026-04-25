@@ -5,7 +5,6 @@
   "main": "src/cli.js",
   "scripts": {
     "test": "node --no-warnings --test tests/test-cli.js",
-    "test:legacy": "for f in tests/test-*.sh; do bash \"$f\" || exit 1; done",
     "start": "node --no-warnings src/server.js",
     "cli": "node --no-warnings src/cli.js"
   },
