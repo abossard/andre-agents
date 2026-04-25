@@ -38,7 +38,7 @@ echo "=== db-helper.sh tests ==="
 
 # Test: init creates the DB
 echo "--- init ---"
-source "$PROJECT_DIR/scripts/db-helper.sh"
+source "$PROJECT_DIR/scripts/legacy/db-helper.sh"
 assert_ok "db_init creates database" db_init
 assert_eq "DB file exists" "true" "$([ -f "$LEARNING_FIRST_DB" ] && echo true || echo false)"
 

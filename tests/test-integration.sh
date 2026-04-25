@@ -22,10 +22,10 @@ assert_eq() {
     fi
 }
 
-KDB="$PROJECT_DIR/scripts/knowledge-db.sh"
-CUR="$PROJECT_DIR/scripts/curriculum.sh"
-QUIZ="$PROJECT_DIR/scripts/quiz.sh"
-ACH="$PROJECT_DIR/scripts/achievements.sh"
+KDB="$PROJECT_DIR/scripts/legacy/knowledge-db.sh"
+CUR="$PROJECT_DIR/scripts/legacy/curriculum.sh"
+QUIZ="$PROJECT_DIR/scripts/legacy/quiz.sh"
+ACH="$PROJECT_DIR/scripts/legacy/achievements.sh"
 
 echo "=== Integration Test: Full Learning Flow ==="
 

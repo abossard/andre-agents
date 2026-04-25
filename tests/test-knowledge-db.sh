@@ -22,7 +22,7 @@ assert_eq() {
     fi
 }
 
-KDB="$PROJECT_DIR/scripts/knowledge-db.sh"
+KDB="$PROJECT_DIR/scripts/legacy/knowledge-db.sh"
 
 echo "=== knowledge-db.sh tests ==="
 

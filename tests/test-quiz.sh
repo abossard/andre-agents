@@ -22,8 +22,8 @@ assert_eq() {
     fi
 }
 
-QUIZ="$PROJECT_DIR/scripts/quiz.sh"
-KDB="$PROJECT_DIR/scripts/knowledge-db.sh"
+QUIZ="$PROJECT_DIR/scripts/legacy/quiz.sh"
+KDB="$PROJECT_DIR/scripts/legacy/knowledge-db.sh"
 
 echo "=== quiz.sh tests ==="
 

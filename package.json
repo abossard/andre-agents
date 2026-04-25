@@ -1,20 +1,17 @@
 {
   "name": "learning-first",
-  "version": "0.2.0",
-  "description": "A learning-focused skill plugin that teaches before implementing — for team onboarding",
+  "version": "0.3.0",
+  "description": "A learning-focused skill plugin that teaches before implementing",
+  "main": "src/cli.js",
+  "scripts": {
+    "test": "node --no-warnings --test tests/test-cli.js",
+    "test:legacy": "for f in tests/test-*.sh; do bash \"$f\" || exit 1; done",
+    "start": "node --no-warnings src/server.js",
+    "cli": "node --no-warnings src/cli.js"
+  },
   "license": "MIT",
-  "author": {
-    "name": "Andre Bossard"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/abossard/andre-agents"
-  },
-  "keywords": [
-    "skills",
-    "learning",
-    "onboarding",
-    "curriculum",
-    "teaching"
-  ]
+  "author": { "name": "Andre Bossard" },
+  "repository": { "type": "git", "url": "https://github.com/abossard/andre-agents" },
+  "keywords": ["skills", "learning", "onboarding", "curriculum", "teaching"],
+  "engines": { "node": ">=22.0.0" }
 }

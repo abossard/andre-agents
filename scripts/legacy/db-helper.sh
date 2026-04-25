@@ -5,7 +5,7 @@
 set -euo pipefail
 
 _LF_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-_LF_PROJECT_DIR="$(cd "$_LF_SCRIPT_DIR/.." && pwd)"
+_LF_PROJECT_DIR="$(cd "$_LF_SCRIPT_DIR/../.." && pwd)"
 _LF_SCHEMA="$_LF_PROJECT_DIR/schemas/knowledge.sql"
 
 # DB location: env override > default

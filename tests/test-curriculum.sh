@@ -22,8 +22,8 @@ assert_eq() {
     fi
 }
 
-CUR="$PROJECT_DIR/scripts/curriculum.sh"
-KDB="$PROJECT_DIR/scripts/knowledge-db.sh"
+CUR="$PROJECT_DIR/scripts/legacy/curriculum.sh"
+KDB="$PROJECT_DIR/scripts/legacy/knowledge-db.sh"
 
 echo "=== curriculum.sh tests ==="
 

@@ -219,9 +219,7 @@ codebase and only activates when the AI agent starts a session.
 
 ### Prerequisites
 
-- **`sqlite3`** ≥ 3.33.0 (for `-json` flag — included in macOS Monterey 12+)
-- **`jq`** (for JSON processing in curriculum scripts)
-- **`bash`** ≥ 4.0
+- **Node.js** ≥ 22 (the CLI uses the built-in `node:sqlite` and `node:test` modules — zero npm dependencies)
 
 ### Step 1: Install for your platform
 
@@ -392,12 +390,34 @@ Full research reports in `docs/research/`.
 ## Testing
 
 ```bash
-# Run all unit tests (39 tests across 6 suites)
+# Node.js test suite (preferred)
+npm test
+
+# Legacy bash test suites — still supported, exercise scripts/legacy/*.sh
+npm run test:legacy
+# or directly:
 for f in tests/test-*.sh; do bash "$f" || exit 1; done
 ```
 
 Pressure test scenarios in `tests/pressure-scenarios/` validate that skills
 enforce the Iron Law even under time pressure, authority claims, and simplicity bias.
+
+## Architecture
+
+The plugin is implemented in Node.js (≥ 22) with **zero npm dependencies**:
+
+- **`src/db.js`** — Thin wrapper around `node:sqlite`; schema bootstrap, parameterized
+  query/exec helpers, repo detection.
+- **`src/cli.js`** — Unified CLI (`node src/cli.js <module> <command> [--repo R] ...`).
+  Modules: `init | profile | topic | repo-knowledge | quiz | achievement |
+  curriculum | repo | review | session`. Replaces the bash scripts that previously
+  lived in `scripts/`.
+- **`src/server.js`** — Optional HTTP server (`npm start`) for browser dashboards.
+  The CLI works fully without it.
+
+Skills and commands invoke the CLI via `node "$PLUGIN_DIR/src/cli.js" ...`. The
+original bash scripts are preserved in `scripts/legacy/` for the legacy test
+suites and as an executable reference.
 
 ## Configuration
 
@@ -413,8 +433,12 @@ enforce the Iron Law even under time pressure, authority claims, and simplicity 
 ├── docs/research/        # Research reports (learning science, mentoring)
 ├── hooks/                # SessionStart hook for auto-activation
 ├── schemas/              # SQLite schema (10 tables)
-├── scripts/              # Knowledge DB, quiz, achievements, spaced repetition,
-│                         # session tracking, curriculum, repo preferences
+├── src/                  # Node.js implementation
+│   ├── db.js             #   SQLite wrapper (node:sqlite)
+│   ├── cli.js            #   Unified CLI used by all skills/commands
+│   └── server.js         #   Optional HTTP server (npm start)
+├── scripts/
+│   └── legacy/           # Deprecated bash scripts (kept for legacy bash tests)
 ├── skills/               # Learning skills (10)
 │   ├── using-learning-first/  # Router — activates on every message
 │   ├── learning-first/        # Core teaching + prompt templates
