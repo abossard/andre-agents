@@ -63,20 +63,20 @@ Task tool (general-purpose, model: opus or gpt-5.4):
          ask "How confident were you? (1-5)" and pass it as
          `confidence_prediction`.
        - **Fatigue check**: before each quiz, run
-         `bash "{PLUGIN_DIR}/scripts/session-tracker.sh" fatigue-check {SESSION_ID}`.
+         `node "{PLUGIN_DIR}/src/cli.js" session fatigue {SESSION_ID}`.
          If `break_suggested` is true, suggest a 5-minute break and pause the
          module until the user confirms they're back.
 
     5. **Evaluate and record**
        - "Good enough" counts — goal is understanding, not perfection
        - Record each quiz with session + metacognition fields:
-         `bash "{PLUGIN_DIR}/scripts/quiz.sh" record <topic> <question> <answer> <0|1> <feedback> <depth>`
+         `node "{PLUGIN_DIR}/src/cli.js" quiz record <topic> <question> <answer> <0|1> <feedback> <depth>`
          and include `session_id={SESSION_ID}`, `response_time_ms`,
          `hint_level_used`, `confidence_prediction`, and `quiz_kind`
          (`recall`|`apply`|`transfer`|`explain`).
        - If < 66% correct: re-teach key point, ask 1 more question.
        - If topic was due for review, also call
-         `bash "{PLUGIN_DIR}/scripts/review-scheduler.sh" record-review <topic_id> <easy|good|hard|lapse>`.
+         `node "{PLUGIN_DIR}/src/cli.js" review record <topic_id> <easy|good|hard|lapse>`.
 
     ## Report Format
 

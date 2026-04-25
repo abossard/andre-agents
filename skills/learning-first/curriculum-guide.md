@@ -17,8 +17,8 @@ Identify the concepts involved:
 
 Query the user's knowledge profile:
 ```
-bash "$PLUGIN_DIR/scripts/knowledge-db.sh" get-profile
-bash "$PLUGIN_DIR/scripts/knowledge-db.sh" get-repo-knowledge <repo_path>
+node "$PLUGIN_DIR/src/cli.js" profile
+node "$PLUGIN_DIR/src/cli.js" repo-knowledge get <repo_path>
 ```
 
 For each concept the task involves:
@@ -130,7 +130,7 @@ At the start of each teaching session:
 Pomodoro-style pacing. After each quiz call:
 
 ```
-bash scripts/session-tracker.sh fatigue-check <session_id>
+node src/cli.js session fatigue <session_id>
 ```
 
 If `break_suggested` is `true` (fatigue_score > 0.6 OR active_minutes > 25):

@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 # SessionStart hook for learning-first plugin
+#
+# Optional: an HTTP server is available via `node src/server.js` (or `npm start`)
+# for browser-based dashboards. The CLI (`node src/cli.js`) works without it —
+# starting the server is purely optional.
 
 set -euo pipefail
 

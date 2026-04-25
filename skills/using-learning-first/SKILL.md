@@ -22,11 +22,11 @@ This is not negotiable. This is not optional. You cannot rationalize your way ou
 **Before doing ANYTHING**, determine the repo and check preferences:
 
 ```bash
-PLUGIN_DIR="${CLAUDE_PLUGIN_ROOT:-${COPILOT_PLUGIN_ROOT:-.}}"
-REPO_INFO=$(bash "$PLUGIN_DIR/scripts/repo-prefs.sh" detect-repo)
+# PLUGIN_DIR — resolved by the agent from the plugin root directory
+REPO_INFO=$(node "$PLUGIN_DIR/src/cli.js" repo detect)
 REPO_ID=$(echo "$REPO_INFO" | jq -r '.repo_id')
 REPO_NAME=$(echo "$REPO_INFO" | jq -r '.repo_name')
-PREF=$(bash "$PLUGIN_DIR/scripts/repo-prefs.sh" get-pref "$REPO_ID")
+PREF=$(node "$PLUGIN_DIR/src/cli.js" repo pref "$REPO_ID")
 ```
 
 **If repo is new** (`exists: false`):
@@ -38,7 +38,7 @@ Ask your human partner:
 
 Record their choice:
 ```bash
-bash "$PLUGIN_DIR/scripts/repo-prefs.sh" set-enabled "$REPO_ID" "$REPO_NAME" <1|0>
+node "$PLUGIN_DIR/src/cli.js" repo enable "$REPO_ID" "$REPO_NAME" <1|0>
 ```
 
 **If learning is disabled** (`learning_enabled: 0`): Skip ALL learning skills. Work normally.
@@ -49,7 +49,7 @@ bash "$PLUGIN_DIR/scripts/repo-prefs.sh" set-enabled "$REPO_ID" "$REPO_NAME" <1|
 
 On session start, check for catch-up reminders:
 ```bash
-DEBTS=$(bash "$PLUGIN_DIR/scripts/repo-prefs.sh" get-debts "$REPO_ID")
+DEBTS=$(node "$PLUGIN_DIR/src/cli.js" repo debts "$REPO_ID")
 ```
 
 If there are pending debts, mention them **once** (gentle):
@@ -65,7 +65,7 @@ Then proceed normally — don't nag.
 Assistance level adapts to demonstrated knowledge:
 
 ```bash
-MASTERY=$(bash "$PLUGIN_DIR/scripts/knowledge-db.sh" --repo "$REPO_ID" get-mastery-level)
+MASTERY=$(node "$PLUGIN_DIR/src/cli.js" topic mastery --repo "$REPO_ID")
 ```
 
 | Mastery Level | What the Agent May Do |
@@ -102,7 +102,7 @@ At ANY point your human partner can say **"override"**, **"just build it"**, or 
 
 1. **Record the override debt:**
 ```bash
-bash "$PLUGIN_DIR/scripts/repo-prefs.sh" record-override "$REPO_ID" "<task description>" "<area>" "<topics>"
+node "$PLUGIN_DIR/src/cli.js" repo override "$REPO_ID" "<task description>" "<area>" "<topics>"
 ```
 
 2. **Ask how they want to proceed:**

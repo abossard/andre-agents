@@ -24,7 +24,7 @@ Your assistance level depends on your human partner's demonstrated mastery for T
 
 Check mastery level at the start of each task:
 ```bash
-MASTERY=$(bash "$PLUGIN_DIR/scripts/knowledge-db.sh" --repo "$REPO_ID" get-mastery-level)
+MASTERY=$(node "$PLUGIN_DIR/src/cli.js" topic mastery --repo "$REPO_ID")
 ```
 
 At L1: If you find yourself about to write code, STOP. Ask a question instead.
@@ -117,15 +117,15 @@ If you catch yourself thinking any of these, STOP. You are rationalizing.
 
 All scripts are located relative to this skill file. Resolve the plugin root:
 ```
-PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# PLUGIN_DIR — resolved by the agent from the plugin root directory
 ```
 
 When calling scripts, use the resolved absolute path:
 ```bash
-bash "$PLUGIN_DIR/scripts/knowledge-db.sh" <command>
-bash "$PLUGIN_DIR/scripts/curriculum.sh" <command>
-bash "$PLUGIN_DIR/scripts/quiz.sh" <command>
-bash "$PLUGIN_DIR/scripts/achievements.sh" <command>
+node "$PLUGIN_DIR/src/cli.js" <profile|topic|repo-knowledge> ...
+node "$PLUGIN_DIR/src/cli.js" curriculum <create|advance|complete|module-status|state|current|abandon> ...
+node "$PLUGIN_DIR/src/cli.js" quiz <record|history|stats|topic-stats> ...
+node "$PLUGIN_DIR/src/cli.js" achievement <award|list|check> ...
 ```
 
 ## Subagent Dispatch
@@ -154,9 +154,9 @@ Read `learning-reviewer-prompt.md` in this directory. Use the Wise Reviewer pers
 ### 1. Initialize & Greet
 
 ```bash
-bash "$PLUGIN_DIR/scripts/knowledge-db.sh" init
-bash "$PLUGIN_DIR/scripts/knowledge-db.sh" get-profile
-bash "$PLUGIN_DIR/scripts/achievements.sh" list
+node "$PLUGIN_DIR/src/cli.js" init
+node "$PLUGIN_DIR/src/cli.js" profile
+node "$PLUGIN_DIR/src/cli.js" achievement list
 ```
 
 If your human partner has prior achievements, mention them warmly:
@@ -194,7 +194,7 @@ Present the curriculum overview:
 
 Register with scripts:
 ```bash
-bash "$PLUGIN_DIR/scripts/curriculum.sh" create "<task-id>" "<repo-path>" "<description>" '<modules-json>'
+node "$PLUGIN_DIR/src/cli.js" curriculum create "<task-id>" "<repo-path>" "<description>" '<modules-json>'
 ```
 
 ### 4. Teach + Quiz Loop (Socratic Method)
@@ -222,15 +222,15 @@ For each module, follow the Socratic approach from SocraticLM (NeurIPS 2024):
 
 **d) Record** — Store results:
 ```bash
-bash "$PLUGIN_DIR/scripts/quiz.sh" record "<topic_id>" "<question>" "<answer>" <0|1> "<feedback>" <depth>
-bash "$PLUGIN_DIR/scripts/curriculum.sh" set-module-status "<task-id>" <index> "completed"
-bash "$PLUGIN_DIR/scripts/curriculum.sh" advance "<task-id>"
+node "$PLUGIN_DIR/src/cli.js" quiz record "<topic_id>" "<question>" "<answer>" <0|1> "<feedback>" <depth>
+node "$PLUGIN_DIR/src/cli.js" curriculum module-status "<task-id>" <index> "completed"
+node "$PLUGIN_DIR/src/cli.js" curriculum advance "<task-id>"
 ```
 
 For skips:
 ```bash
-bash "$PLUGIN_DIR/scripts/curriculum.sh" set-module-status "<task-id>" <index> "skipped" "user requested skip"
-bash "$PLUGIN_DIR/scripts/curriculum.sh" advance "<task-id>"
+node "$PLUGIN_DIR/src/cli.js" curriculum module-status "<task-id>" <index> "skipped" "user requested skip"
+node "$PLUGIN_DIR/src/cli.js" curriculum advance "<task-id>"
 ```
 
 ### 5. Design Checkpoint
@@ -257,14 +257,14 @@ Respond to their design by:
 
 Update knowledge state:
 ```bash
-bash "$PLUGIN_DIR/scripts/knowledge-db.sh" update-topic-status "<topic-id>" "mastered"
-bash "$PLUGIN_DIR/scripts/knowledge-db.sh" update-repo-knowledge "<repo>" "<area>" "basic|solid"
-bash "$PLUGIN_DIR/scripts/curriculum.sh" complete "<task-id>"
+node "$PLUGIN_DIR/src/cli.js" topic status "<topic-id>" "mastered"
+node "$PLUGIN_DIR/src/cli.js" repo-knowledge set "<area>" "basic|solid"
+node "$PLUGIN_DIR/src/cli.js" curriculum complete "<task-id>"
 ```
 
 Award achievements based on milestones:
 ```bash
-bash "$PLUGIN_DIR/scripts/achievements.sh" award "<id>" "<title>" "<description>" "<context>"
+node "$PLUGIN_DIR/src/cli.js" achievement award "<id>" "<title>" "<description>" "<context>"
 ```
 
 Achievement triggers:
@@ -298,7 +298,7 @@ At ANY point your human partner can say "override", "just build it", or "skip le
 
 1. **Record the override debt:**
 ```bash
-bash "$PLUGIN_DIR/scripts/repo-prefs.sh" record-override "$REPO_ID" "<task description>" "<area>" "<topics>"
+node "$PLUGIN_DIR/src/cli.js" repo override "$REPO_ID" "<task description>" "<area>" "<topics>"
 ```
 
 2. **Ask how they want to proceed:**

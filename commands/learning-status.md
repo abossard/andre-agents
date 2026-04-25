@@ -7,7 +7,7 @@ Run the knowledge profile command and format the output for your human partner:
 ```bash
 # Resolve plugin root from platform env var or script location
 PLUGIN_DIR="${CLAUDE_PLUGIN_ROOT:-${COPILOT_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}}"
-bash "$PLUGIN_DIR/scripts/knowledge-db.sh" get-profile
+node "$PLUGIN_DIR/src/cli.js" profile
 ```
 
 Format the JSON output as a readable summary:

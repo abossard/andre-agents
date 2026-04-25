@@ -22,7 +22,7 @@ Your assistance level depends on your human partner's demonstrated mastery:
 - **L3 (expert):** Teach + categorize feedback items, user decides accept/reject for each. User fills in the logic.
 - **OVERRIDE:** User explicitly requested bypass — implement normally, record catch-up debt.
 
-Check mastery via: `bash "$PLUGIN_DIR/scripts/knowledge-db.sh" --repo "$REPO_ID" get-mastery-level`
+Check mastery via: `node "$PLUGIN_DIR/src/cli.js" topic mastery --repo "$REPO_ID"`
 </HARD-GATE>
 
 **Announce at start:** "I'm using learning-review-feedback to teach critical evaluation of review comments."
@@ -72,12 +72,12 @@ Check mastery via: `bash "$PLUGIN_DIR/scripts/knowledge-db.sh" --repo "$REPO_ID"
 ## Plugin Directory
 
 ```
-PLUGIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# PLUGIN_DIR — resolved by the agent from the plugin root directory
 ```
 
 ## The Override Escape Hatch
 
 At ANY point your human partner can say "override" or "just build it":
-1. Record: `bash "$PLUGIN_DIR/scripts/repo-prefs.sh" record-override "$REPO_ID" "<task>" "<area>"`
+1. Record: `node "$PLUGIN_DIR/src/cli.js" repo override "$REPO_ID" "<task>" "<area>"`
 2. Ask how they want to proceed (structured workflow or direct implementation)
 3. Get out of the way — no guilt, no reminders this session
