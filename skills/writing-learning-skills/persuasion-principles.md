@@ -1,1 +1,2 @@
-../../docs/references/persuasion-principles.md
+<!-- Canonical location: docs/references/persuasion-principles.md -->
+See [persuasion-principles.md](../../docs/references/persuasion-principles.md)

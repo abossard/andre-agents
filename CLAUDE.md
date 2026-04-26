@@ -33,17 +33,21 @@ The agent never writes implementation code — it teaches, quizzes, guides, and 
 User progress stored in `~/.learning-first/knowledge.db` (SQLite).
 Override with `LEARNING_FIRST_DB` environment variable.
 
-## Architecture (v0.3.0)
+## Architecture (v0.4.0)
 
-Plugin is implemented in Node.js (≥ 22) with **zero npm dependencies**:
+Plugin is implemented in Node.js (≥ 22) with **zero npm dependencies**, ESM throughout:
 
-- `src/db.js` — shared `node:sqlite` wrapper (schema bootstrap, query helpers)
+- `src/db.js` — `node:sqlite` wrapper (schema bootstrap, versioned migrations, query helpers)
 - `src/cli.js` — unified CLI invoked by every skill/command:
   `node "$PLUGIN_DIR/src/cli.js" <module> <command> [...]`
-- `src/server.js` — optional HTTP server (`npm start`, default port `3142`)
-  for the web companion knowledge base.
+  Modules: `init | profile | topic | repo-knowledge | quiz | achievement | curriculum | repo | review | session | server | doctor`
+- `src/server/` — modular HTTP server (auto-starts with sessions):
+  `index.js` (startup) · `routes.js` (18 endpoints) · `queries.js` · `sse.js` · `static.js` · `util.js`
+- `src/public/` — SPA dashboard (vanilla JS, dark theme, SVG charts, SSE live updates)
+- `src/daemon.js` — lockfile-based server lifecycle (start/stop/status, PID verification)
+- `src/notify.js` — fire-and-forget CLI → server SSE push
 
-Run tests with `npm test` (Node `node:test` runner). Prerequisite: Node.js ≥ 22.
+Run tests with `npm test` (70 tests, Node `node:test` runner). Prerequisite: Node.js ≥ 22.
 
 ## The Iron Law
 

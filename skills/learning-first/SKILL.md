@@ -130,7 +130,7 @@ node "$PLUGIN_DIR/src/cli.js" achievement <award|list|check> ...
 
 ## Subagent Dispatch
 
-For each phase, dispatch specialized subagents using strong models (Opus/GPT-5.4):
+For each phase, dispatch specialized subagents using strong models (Opus/a strong reasoning model):
 
 **Curriculum generation (Step 3):**
 Read `curriculum-designer-prompt.md` in this directory for the dispatch template.
@@ -175,9 +175,6 @@ Analyze the codebase WITHOUT sharing findings directly with your human partner:
 
 This analysis informs the curriculum but stays internal. Your human partner should
 DISCOVER these things through the learning modules, not be told them.
-
-**Do NOT invoke the brainstorming skill.** It is user-interactive by design and cannot
-be hidden. Perform your own analysis using explore agents or direct file/grep searches.
 
 ### 3. Generate Curriculum
 

@@ -2,8 +2,10 @@
 // src/cli.js — Unified Node.js CLI for the learning-first plugin. Zero npm dependencies.
 process.removeAllListeners('warning');
 
-const crypto = require('node:crypto');
-const db = require('./db');
+import crypto from 'node:crypto';
+import path from 'node:path';
+import * as db from './db.js';
+import { notifyServer } from './notify.js';
 
 function out(value) {
   if (value === undefined) return;
@@ -21,13 +23,17 @@ function fail(msg) {
 
 function parseGlobalFlags(argv) {
   const args = [];
-  const flags = { repo: null, limit: null };
+  const flags = { repo: null, limit: null, session: null, responseTime: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--repo') {
       flags.repo = argv[++i];
     } else if (a === '--limit') {
       flags.limit = parseInt(argv[++i], 10);
+    } else if (a === '--session') {
+      flags.session = argv[++i];
+    } else if (a === '--response-time') {
+      flags.responseTime = parseInt(argv[++i], 10);
     } else {
       args.push(a);
     }
@@ -54,20 +60,20 @@ function cmdInit() {
 function cmdProfile(_args, flags) {
   const repo = getRepo(flags);
   const topics = db.query(
-    `SELECT * FROM knowledge_topics WHERE repo_id=:repo OR repo_id='_global' ORDER BY first_seen_at DESC`,
-    { repo }
+    `SELECT * FROM knowledge_topics WHERE repo_id=$repo OR repo_id='_global' ORDER BY first_seen_at DESC`,
+    { $repo: repo }
   );
   const achievements = db.query(
-    `SELECT * FROM achievements WHERE repo_id=:repo OR repo_id='_global' ORDER BY earned_at DESC`,
-    { repo }
+    `SELECT * FROM achievements WHERE repo_id=$repo OR repo_id='_global' ORDER BY earned_at DESC`,
+    { $repo: repo }
   );
   const repoKnowledge = db.query(
-    `SELECT * FROM repo_knowledge WHERE repo_id=:repo ORDER BY last_assessed_at DESC`,
-    { repo }
+    `SELECT * FROM repo_knowledge WHERE repo_id=$repo ORDER BY last_assessed_at DESC`,
+    { $repo: repo }
   );
   const debts = db.query(
-    `SELECT * FROM override_debts WHERE repo_id=:repo AND status='pending' ORDER BY created_at DESC`,
-    { repo }
+    `SELECT * FROM override_debts WHERE repo_id=$repo AND status='pending' ORDER BY created_at DESC`,
+    { $repo: repo }
   );
   out({
     repo_id: repo,
@@ -86,8 +92,8 @@ function cmdTopic(args, flags) {
     case 'get': {
       need(args, 1, 'topic get <id>');
       const rows = db.query(
-        `SELECT * FROM knowledge_topics WHERE id=:id AND repo_id=:repo`,
-        { id: args[0], repo }
+        `SELECT * FROM knowledge_topics WHERE id=$id AND repo_id=$repo`,
+        { $id: args[0], $repo: repo }
       );
       out(rows);
       return;
@@ -98,14 +104,15 @@ function cmdTopic(args, flags) {
       const depth = parseInt(depthStr, 10);
       db.exec(
         `INSERT INTO knowledge_topics (id, repo_id, domain, title, scope, depth_level)
-         VALUES (:id, :repo, :domain, :title, :scope, :depth)
+         VALUES ($id, $repo, $domain, $title, $scope, $depth)
          ON CONFLICT(id, repo_id) DO UPDATE SET
            depth_level = MAX(knowledge_topics.depth_level, excluded.depth_level),
            domain = excluded.domain,
            title = excluded.title`,
-        { id, repo, domain, title, scope, depth }
+        { $id: id, $repo: repo, $domain: domain, $title: title, $scope: scope, $depth: depth }
       );
       out({ ok: true, id, repo_id: repo });
+      notifyServer('topic-update', { topic_id: id, repo_id: repo });
       return;
     }
     case 'status': {
@@ -113,14 +120,14 @@ function cmdTopic(args, flags) {
       const [id, status] = args;
       if (status === 'mastered') {
         db.exec(
-          `UPDATE knowledge_topics SET status=:status, mastered_at=datetime('now')
-           WHERE id=:id AND repo_id=:repo`,
-          { id, status, repo }
+          `UPDATE knowledge_topics SET status=$status, mastered_at=datetime('now')
+           WHERE id=$id AND repo_id=$repo`,
+          { $id: id, $status: status, $repo: repo }
         );
       } else {
         db.exec(
-          `UPDATE knowledge_topics SET status=:status WHERE id=:id AND repo_id=:repo`,
-          { id, status, repo }
+          `UPDATE knowledge_topics SET status=$status WHERE id=$id AND repo_id=$repo`,
+          { $id: id, $status: status, $repo: repo }
         );
       }
       out({ ok: true, id, status });
@@ -128,22 +135,22 @@ function cmdTopic(args, flags) {
     }
     case 'mastery': {
       const total = db.scalar(
-        `SELECT COUNT(*) FROM knowledge_topics WHERE repo_id=:repo`,
-        { repo }
+        `SELECT COUNT(*) FROM knowledge_topics WHERE repo_id=$repo`,
+        { $repo: repo }
       );
       const mastered = db.scalar(
-        `SELECT COUNT(*) FROM knowledge_topics WHERE repo_id=:repo AND status='mastered'`,
-        { repo }
+        `SELECT COUNT(*) FROM knowledge_topics WHERE repo_id=$repo AND status='mastered'`,
+        { $repo: repo }
       );
       const avgDepth = db.scalar(
         `SELECT COALESCE(ROUND(AVG(depth_level)), 1)
-         FROM knowledge_topics WHERE repo_id=:repo AND status='mastered'`,
-        { repo }
+         FROM knowledge_topics WHERE repo_id=$repo AND status='mastered'`,
+        { $repo: repo }
       );
       const quizPct = db.scalar(
         `SELECT COALESCE(ROUND(100.0 * SUM(correct) / MAX(COUNT(*), 1)), 0)
-         FROM quiz_results WHERE repo_id=:repo`,
-        { repo }
+         FROM quiz_results WHERE repo_id=$repo`,
+        { $repo: repo }
       );
       out({
         repo_id: repo,
@@ -169,13 +176,13 @@ function cmdRepoKnowledge(args, flags) {
       if (area) {
         out(
           db.query(
-            `SELECT * FROM repo_knowledge WHERE repo_id=:repo AND area=:area`,
-            { repo, area }
+            `SELECT * FROM repo_knowledge WHERE repo_id=$repo AND area=$area`,
+            { $repo: repo, $area: area }
           )
         );
       } else {
         out(
-          db.query(`SELECT * FROM repo_knowledge WHERE repo_id=:repo`, { repo })
+          db.query(`SELECT * FROM repo_knowledge WHERE repo_id=$repo`, { $repo: repo })
         );
       }
       return;
@@ -185,11 +192,11 @@ function cmdRepoKnowledge(args, flags) {
       const [area, level] = args;
       db.exec(
         `INSERT INTO repo_knowledge (repo_id, area, familiarity)
-         VALUES (:repo, :area, :level)
+         VALUES ($repo, $area, $level)
          ON CONFLICT(repo_id, area) DO UPDATE SET
            familiarity = excluded.familiarity,
            last_assessed_at = datetime('now')`,
-        { repo, area, level }
+        { $repo: repo, $area: area, $level: level }
       );
       out({ ok: true, repo_id: repo, area, familiarity: level });
       return;
@@ -209,20 +216,23 @@ function cmdQuiz(args, flags) {
       const [topic_id, question, answer, correctStr, feedback, depthStr] = args;
       const correct = parseInt(correctStr, 10);
       const depth = parseInt(depthStr, 10);
+      const session_id = flags.session || null;
+      const response_time_ms = Number.isFinite(flags.responseTime) ? flags.responseTime : null;
       const result = db.exec(
-        `INSERT INTO quiz_results (repo_id, topic_id, question, user_answer, correct, feedback, depth_level)
-         VALUES (:repo, :topic_id, :question, :answer, :correct, :feedback, :depth)`,
-        { repo, topic_id, question, answer, correct, feedback, depth }
+        `INSERT INTO quiz_results (repo_id, topic_id, question, user_answer, correct, feedback, depth_level, session_id, response_time_ms)
+         VALUES ($repo, $topic_id, $question, $answer, $correct, $feedback, $depth, $session_id, $response_time_ms)`,
+        { $repo: repo, $topic_id: topic_id, $question: question, $answer: answer, $correct: correct, $feedback: feedback, $depth: depth, $session_id: session_id, $response_time_ms: response_time_ms }
       );
       out({ ok: true, id: Number(result.lastInsertRowid) });
+      notifyServer('quiz-recorded', { topic_id, repo_id: repo, correct });
       return;
     }
     case 'history': {
       need(args, 1, 'quiz history <topic_id>');
       out(
         db.query(
-          `SELECT * FROM quiz_results WHERE topic_id=:t AND repo_id=:repo ORDER BY asked_at DESC`,
-          { t: args[0], repo }
+          `SELECT * FROM quiz_results WHERE topic_id=$t AND repo_id=$repo ORDER BY asked_at DESC`,
+          { $t: args[0], $repo: repo }
         )
       );
       return;
@@ -235,8 +245,8 @@ function cmdQuiz(args, flags) {
               SUM(correct) as correct,
               ROUND(100.0 * SUM(correct) / MAX(COUNT(*), 1)) as pct_correct,
               COUNT(DISTINCT topic_id) as topics_quizzed
-           FROM quiz_results WHERE repo_id=:repo`,
-          { repo }
+           FROM quiz_results WHERE repo_id=$repo`,
+          { $repo: repo }
         )
       );
       return;
@@ -250,8 +260,8 @@ function cmdQuiz(args, flags) {
               SUM(correct) as correct,
               ROUND(100.0 * SUM(correct) / MAX(COUNT(*), 1)) as pct_correct,
               MAX(depth_level) as max_depth
-           FROM quiz_results WHERE topic_id=:t AND repo_id=:repo`,
-          { t: args[0], repo }
+           FROM quiz_results WHERE topic_id=$t AND repo_id=$repo`,
+          { $t: args[0], $repo: repo }
         )
       );
       return;
@@ -271,17 +281,18 @@ function cmdAchievement(args, flags) {
       const [id, title, description, context = ''] = args;
       const r = db.exec(
         `INSERT OR IGNORE INTO achievements (id, repo_id, title, description, context)
-         VALUES (:id, :repo, :title, :description, :context)`,
-        { id, repo, title, description, context }
+         VALUES ($id, $repo, $title, $description, $context)`,
+        { $id: id, $repo: repo, $title: title, $description: description, $context: context }
       );
       out({ ok: true, id, awarded: r.changes > 0 });
+      if (r.changes > 0) notifyServer('achievement-earned', { id, repo_id: repo });
       return;
     }
     case 'list': {
       out(
         db.query(
-          `SELECT * FROM achievements WHERE repo_id=:repo OR repo_id='_global' ORDER BY earned_at DESC`,
-          { repo }
+          `SELECT * FROM achievements WHERE repo_id=$repo OR repo_id='_global' ORDER BY earned_at DESC`,
+          { $repo: repo }
         )
       );
       return;
@@ -290,8 +301,8 @@ function cmdAchievement(args, flags) {
       need(args, 1, 'achievement check <id>');
       const count = db.scalar(
         `SELECT COUNT(*) FROM achievements
-         WHERE id=:id AND (repo_id=:repo OR repo_id='_global')`,
-        { id: args[0], repo }
+         WHERE id=$id AND (repo_id=$repo OR repo_id='_global')`,
+        { $id: args[0], $repo: repo }
       );
       out({ id: args[0], earned: (count ?? 0) > 0 });
       return;
@@ -319,19 +330,19 @@ function cmdCurriculum(args, flags) {
       db.transaction((t) => {
         t.exec(
           `INSERT INTO curricula (task_id, repo_id, task_description)
-           VALUES (:task_id, :repo, :description)`,
-          { task_id, repo, description }
+           VALUES ($task_id, $repo, $description)`,
+          { $task_id: task_id, $repo: repo, $description: description }
         );
         modules.forEach((m, i) => {
           t.exec(
             `INSERT INTO curriculum_modules (task_id, module_index, module_id, title, topic_id)
-             VALUES (:task_id, :idx, :module_id, :title, :topic_id)`,
+             VALUES ($task_id, $idx, $module_id, $title, $topic_id)`,
             {
-              task_id,
-              idx: i,
-              module_id: m.module_id,
-              title: m.title,
-              topic_id: m.topic_id || null,
+              $task_id: task_id,
+              $idx: i,
+              $module_id: m.module_id,
+              $title: m.title,
+              $topic_id: m.topic_id || null,
             }
           );
         });
@@ -343,12 +354,12 @@ function cmdCurriculum(args, flags) {
       need(args, 1, 'curriculum state <task_id>');
       const task_id = args[0];
       const curriculum = db.query(
-        `SELECT * FROM curricula WHERE task_id=:t`,
-        { t: task_id }
+        `SELECT * FROM curricula WHERE task_id=$t`,
+        { $t: task_id }
       );
       const modules = db.query(
-        `SELECT * FROM curriculum_modules WHERE task_id=:t ORDER BY module_index`,
-        { t: task_id }
+        `SELECT * FROM curriculum_modules WHERE task_id=$t ORDER BY module_index`,
+        { $t: task_id }
       );
       const c = curriculum[0] || {};
       out({
@@ -363,12 +374,12 @@ function cmdCurriculum(args, flags) {
       need(args, 1, 'curriculum current <task_id>');
       const task_id = args[0];
       const idx = db.scalar(
-        `SELECT current_module_index FROM curricula WHERE task_id=:t`,
-        { t: task_id }
+        `SELECT current_module_index FROM curricula WHERE task_id=$t`,
+        { $t: task_id }
       );
       const rows = db.query(
-        `SELECT * FROM curriculum_modules WHERE task_id=:t AND module_index=:i`,
-        { t: task_id, i: idx ?? 0 }
+        `SELECT * FROM curriculum_modules WHERE task_id=$t AND module_index=$i`,
+        { $t: task_id, $i: idx ?? 0 }
       );
       out(rows[0] || null);
       return;
@@ -376,10 +387,11 @@ function cmdCurriculum(args, flags) {
     case 'advance': {
       need(args, 1, 'curriculum advance <task_id>');
       db.exec(
-        `UPDATE curricula SET current_module_index = current_module_index + 1 WHERE task_id=:t`,
-        { t: args[0] }
+        `UPDATE curricula SET current_module_index = current_module_index + 1 WHERE task_id=$t`,
+        { $t: args[0] }
       );
       out({ ok: true, task_id: args[0] });
+      notifyServer('curriculum-advanced', { task_id: args[0], repo_id: repo });
       return;
     }
     case 'module-status': {
@@ -392,30 +404,30 @@ function cmdCurriculum(args, flags) {
         timeClause = ", completed_at = datetime('now')";
       db.exec(
         `UPDATE curriculum_modules
-         SET status=:status, skipped_reason=:reason${timeClause}
-         WHERE task_id=:task_id AND module_index=:idx`,
-        { status, reason: reason ?? null, task_id, idx }
+         SET status=$status, skipped_reason=$reason${timeClause}
+         WHERE task_id=$task_id AND module_index=$idx`,
+        { $status: status, $reason: reason ?? null, $task_id: task_id, $idx: idx }
       );
       out({ ok: true, task_id, module_index: idx, status });
       return;
     }
     case 'complete': {
+      process.stderr.write('⚠️  curriculum complete is deprecated, use "curriculum end <task_id> completed" instead\n');
       need(args, 1, 'curriculum complete <task_id>');
-      db.exec(
-        `UPDATE curricula SET status='completed', completed_at=datetime('now') WHERE task_id=:t`,
-        { t: args[0] }
-      );
-      out({ ok: true, task_id: args[0], status: 'completed' });
-      return;
+      return curriculumEnd(args[0], 'completed');
     }
     case 'abandon': {
+      process.stderr.write('⚠️  curriculum abandon is deprecated, use "curriculum end <task_id> abandoned" instead\n');
       need(args, 1, 'curriculum abandon <task_id>');
-      db.exec(
-        `UPDATE curricula SET status='abandoned', completed_at=datetime('now') WHERE task_id=:t`,
-        { t: args[0] }
-      );
-      out({ ok: true, task_id: args[0], status: 'abandoned' });
-      return;
+      return curriculumEnd(args[0], 'abandoned');
+    }
+    case 'end': {
+      need(args, 2, 'curriculum end <task_id> <completed|abandoned>');
+      const [task_id, status] = args;
+      if (!['completed', 'abandoned'].includes(status)) {
+        fail(`status must be completed or abandoned, got: ${status}`);
+      }
+      return curriculumEnd(task_id, status);
     }
     default:
       fail(`unknown curriculum subcommand: ${sub}`);
@@ -423,20 +435,37 @@ function cmdCurriculum(args, flags) {
 }
 
 // ----- repo -----
+function curriculumEnd(task_id, status) {
+  db.exec(
+    `UPDATE curricula SET status=$status, completed_at=datetime('now') WHERE task_id=$t`,
+    { $status: status, $t: task_id }
+  );
+  out({ ok: true, task_id, status });
+  notifyServer('curriculum-advanced', { task_id, status });
+}
+
+function debtResolve(id, status) {
+  db.exec(
+    `UPDATE override_debts SET status=$status, caught_up_at=datetime('now') WHERE id=$id`,
+    { $status: status, $id: id }
+  );
+  out({ ok: true, debt_id: id, status });
+}
+
 function cmdRepo(args, _flags) {
   const sub = args.shift();
   switch (sub) {
     case 'detect': {
       const repo_id = db.detectRepoId();
-      const repo_name = require('node:path').basename(process.cwd());
+      const repo_name = path.basename(process.cwd());
       out({ repo_id, repo_name });
       return;
     }
     case 'pref': {
       need(args, 1, 'repo pref <repo_id>');
       const rows = db.query(
-        `SELECT * FROM repo_preferences WHERE repo_id=:r`,
-        { r: args[0] }
+        `SELECT * FROM repo_preferences WHERE repo_id=$r`,
+        { $r: args[0] }
       );
       if (rows.length === 0) out({ exists: false });
       else out({ ...rows[0], exists: true });
@@ -448,11 +477,11 @@ function cmdRepo(args, _flags) {
       const enabled = parseInt(enabledStr, 10);
       db.exec(
         `INSERT INTO repo_preferences (repo_id, repo_name, learning_enabled)
-         VALUES (:repo_id, :repo_name, :enabled)
+         VALUES ($repo_id, $repo_name, $enabled)
          ON CONFLICT(repo_id) DO UPDATE SET
            learning_enabled = excluded.learning_enabled,
            last_session_at = datetime('now')`,
-        { repo_id, repo_name, enabled }
+        { $repo_id: repo_id, $repo_name: repo_name, $enabled: enabled }
       );
       out({ ok: true, repo_id, learning_enabled: enabled });
       return;
@@ -462,8 +491,8 @@ function cmdRepo(args, _flags) {
       const [repo_id, task, area, topics] = args;
       const r = db.exec(
         `INSERT INTO override_debts (repo_id, task_description, area, topics_skipped)
-         VALUES (:repo_id, :task, :area, :topics)`,
-        { repo_id, task, area: area ?? null, topics: topics ?? null }
+         VALUES ($repo_id, $task, $area, $topics)`,
+        { $repo_id: repo_id, $task: task, $area: area ?? null, $topics: topics ?? null }
       );
       out({ ok: true, debt_id: Number(r.lastInsertRowid) });
       return;
@@ -472,37 +501,36 @@ function cmdRepo(args, _flags) {
       need(args, 1, 'repo debts <repo_id>');
       out(
         db.query(
-          `SELECT * FROM override_debts WHERE repo_id=:r AND status='pending' ORDER BY created_at DESC`,
-          { r: args[0] }
+          `SELECT * FROM override_debts WHERE repo_id=$r AND status='pending' ORDER BY created_at DESC`,
+          { $r: args[0] }
         )
       );
       return;
     }
     case 'catch-up': {
+      process.stderr.write('⚠️  repo catch-up is deprecated, use "repo debt-resolve <id> caught_up" instead\n');
       need(args, 1, 'repo catch-up <debt_id>');
-      const id = parseInt(args[0], 10);
-      db.exec(
-        `UPDATE override_debts SET status='caught_up', caught_up_at=datetime('now') WHERE id=:id`,
-        { id }
-      );
-      out({ ok: true, debt_id: id, status: 'caught_up' });
-      return;
+      return debtResolve(parseInt(args[0], 10), 'caught_up');
     }
     case 'dismiss': {
+      process.stderr.write('⚠️  repo dismiss is deprecated, use "repo debt-resolve <id> dismissed" instead\n');
       need(args, 1, 'repo dismiss <debt_id>');
-      const id = parseInt(args[0], 10);
-      db.exec(
-        `UPDATE override_debts SET status='dismissed', caught_up_at=datetime('now') WHERE id=:id`,
-        { id }
-      );
-      out({ ok: true, debt_id: id, status: 'dismissed' });
-      return;
+      return debtResolve(parseInt(args[0], 10), 'dismissed');
+    }
+    case 'debt-resolve': {
+      need(args, 2, 'repo debt-resolve <debt_id> <caught_up|dismissed>');
+      const [idStr, status] = args;
+      if (!['caught_up', 'dismissed'].includes(status)) {
+        fail(`status must be caught_up or dismissed, got: ${status}`);
+      }
+      return debtResolve(parseInt(idStr, 10), status);
     }
     case 'touch': {
+      process.stderr.write('⚠️  repo touch is deprecated\n');
       need(args, 1, 'repo touch <repo_id>');
       db.exec(
-        `UPDATE repo_preferences SET last_session_at=datetime('now') WHERE repo_id=:r`,
-        { r: args[0] }
+        `UPDATE repo_preferences SET last_session_at=datetime('now') WHERE repo_id=$r`,
+        { $r: args[0] }
       );
       out({ ok: true, repo_id: args[0] });
       return;
@@ -525,12 +553,12 @@ function cmdReview(args, flags) {
            FROM topic_review_state trs
            LEFT JOIN knowledge_topics kt
              ON kt.id = trs.topic_id AND kt.repo_id = trs.repo_id
-           WHERE trs.repo_id=:repo
+           WHERE trs.repo_id=$repo
              AND trs.next_review_at IS NOT NULL
              AND trs.next_review_at <= datetime('now')
            ORDER BY trs.next_review_at ASC
-           LIMIT :limit`,
-          { repo, limit }
+           LIMIT $limit`,
+          { $repo: repo, $limit: limit }
         )
       );
       return;
@@ -540,8 +568,8 @@ function cmdReview(args, flags) {
       db.exec(
         `INSERT OR IGNORE INTO topic_review_state
          (repo_id, topic_id, ease_factor, interval_days, next_review_at)
-         VALUES (:repo, :t, 2.5, 1, datetime('now'))`,
-        { repo, t: args[0] }
+         VALUES ($repo, $t, 2.5, 1, datetime('now'))`,
+        { $repo: repo, $t: args[0] }
       );
       out({ ok: true, topic_id: args[0] });
       return;
@@ -550,8 +578,8 @@ function cmdReview(args, flags) {
       need(args, 1, 'review state <topic_id>');
       out(
         db.query(
-          `SELECT * FROM topic_review_state WHERE repo_id=:repo AND topic_id=:t`,
-          { repo, t: args[0] }
+          `SELECT * FROM topic_review_state WHERE repo_id=$repo AND topic_id=$t`,
+          { $repo: repo, $t: args[0] }
         )
       );
       return;
@@ -562,7 +590,7 @@ function cmdReview(args, flags) {
           `WITH latest_quiz AS (
              SELECT topic_id, correct, asked_at,
                     ROW_NUMBER() OVER (PARTITION BY topic_id ORDER BY asked_at DESC) AS rn
-             FROM quiz_results WHERE repo_id=:repo
+             FROM quiz_results WHERE repo_id=$repo
            )
            SELECT kt.id AS topic_id, kt.title, kt.domain,
                   kt.mastered_at, lq.correct AS last_correct, lq.asked_at AS last_asked_at,
@@ -571,13 +599,13 @@ function cmdReview(args, flags) {
            LEFT JOIN latest_quiz lq ON lq.topic_id = kt.id AND lq.rn = 1
            LEFT JOIN topic_review_state trs
                   ON trs.topic_id = kt.id AND trs.repo_id = kt.repo_id
-           WHERE kt.repo_id=:repo
+           WHERE kt.repo_id=$repo
              AND (
                (kt.mastered_at IS NOT NULL AND lq.correct = 0 AND lq.asked_at > kt.mastered_at)
                OR COALESCE(trs.lapse_count, 0) > 0
              )
            ORDER BY lq.asked_at DESC`,
-          { repo }
+          { $repo: repo }
         )
       );
       return;
@@ -592,13 +620,13 @@ function cmdReview(args, flags) {
         t.exec(
           `INSERT OR IGNORE INTO topic_review_state
            (repo_id, topic_id, ease_factor, interval_days, next_review_at)
-           VALUES (:repo, :t, 2.5, 1, datetime('now'))`,
-          { repo, t: topic_id }
+           VALUES ($repo, $t, 2.5, 1, datetime('now'))`,
+          { $repo: repo, $t: topic_id }
         );
         const cur = t.query(
           `SELECT ease_factor, interval_days, correct_streak, lapse_count, last_reviewed_at
-           FROM topic_review_state WHERE repo_id=:repo AND topic_id=:t`,
-          { repo, t: topic_id }
+           FROM topic_review_state WHERE repo_id=$repo AND topic_id=$t`,
+          { $repo: repo, $t: topic_id }
         )[0] || {};
         let ef = Number(cur.ease_factor ?? 2.5);
         let days = Number(cur.interval_days ?? 1);
@@ -635,8 +663,8 @@ function cmdReview(args, flags) {
                WHEN last_reviewed_at IS NOT NULL
                     AND (julianday('now') - julianday(last_reviewed_at)) >= 7
                THEN 1 ELSE 0 END
-             FROM topic_review_state WHERE repo_id=:repo AND topic_id=:t`,
-            { repo, t: topic_id }
+             FROM topic_review_state WHERE repo_id=$repo AND topic_id=$t`,
+            { $repo: repo, $t: topic_id }
           );
           retentionPassed = elig === 1;
         }
@@ -645,33 +673,33 @@ function cmdReview(args, flags) {
         const daysRounded = Number(days.toFixed(4));
         const sql = retentionPassed
           ? `UPDATE topic_review_state SET
-               ease_factor = :ef,
-               interval_days = :days,
-               correct_streak = :streak,
-               lapse_count = :lapses,
+               ease_factor = $ef,
+               interval_days = $days,
+               correct_streak = $streak,
+               lapse_count = $lapses,
                last_reviewed_at = datetime('now'),
-               next_review_at = datetime('now', '+' || :days || ' days'),
+               next_review_at = datetime('now', '+' || $days || ' days'),
                retention_passed_at = datetime('now')
-             WHERE repo_id=:repo AND topic_id=:t`
+             WHERE repo_id=$repo AND topic_id=$t`
           : `UPDATE topic_review_state SET
-               ease_factor = :ef,
-               interval_days = :days,
-               correct_streak = :streak,
-               lapse_count = :lapses,
+               ease_factor = $ef,
+               interval_days = $days,
+               correct_streak = $streak,
+               lapse_count = $lapses,
                last_reviewed_at = datetime('now'),
-               next_review_at = datetime('now', '+' || :days || ' days')
-             WHERE repo_id=:repo AND topic_id=:t`;
+               next_review_at = datetime('now', '+' || $days || ' days')
+             WHERE repo_id=$repo AND topic_id=$t`;
         t.exec(sql, {
-          ef: efRounded,
-          days: daysRounded,
-          streak,
-          lapses,
-          repo,
-          t: topic_id,
+          $ef: efRounded,
+          $days: daysRounded,
+          $streak: streak,
+          $lapses: lapses,
+          $repo: repo,
+          $t: topic_id,
         });
         return t.query(
-          `SELECT * FROM topic_review_state WHERE repo_id=:repo AND topic_id=:t`,
-          { repo, t: topic_id }
+          `SELECT * FROM topic_review_state WHERE repo_id=$repo AND topic_id=$t`,
+          { $repo: repo, $t: topic_id }
         );
       });
       out(result);
@@ -701,8 +729,8 @@ function cmdSession(args, flags) {
       const id = genSessionId();
       db.exec(
         `INSERT INTO learning_sessions (id, repo_id, started_at)
-         VALUES (:id, :repo, datetime('now'))`,
-        { id, repo }
+         VALUES ($id, $repo, datetime('now'))`,
+        { $id: id, $repo: repo }
       );
       out({ session_id: id, repo_id: repo });
       return;
@@ -714,18 +742,18 @@ function cmdSession(args, flags) {
         `UPDATE learning_sessions
          SET ended_at = datetime('now'),
              duration_minutes = CAST((julianday('now') - julianday(started_at)) * 24 * 60 AS INTEGER)
-         WHERE id=:id`,
-        { id }
+         WHERE id=$id`,
+        { $id: id }
       );
       out(
-        db.query(`SELECT * FROM learning_sessions WHERE id=:id`, { id })
+        db.query(`SELECT * FROM learning_sessions WHERE id=$id`, { $id: id })
       );
       return;
     }
     case 'get': {
       need(args, 1, 'session get <session_id>');
       out(
-        db.query(`SELECT * FROM learning_sessions WHERE id=:id`, { id: args[0] })
+        db.query(`SELECT * FROM learning_sessions WHERE id=$id`, { $id: args[0] })
       );
       return;
     }
@@ -734,9 +762,9 @@ function cmdSession(args, flags) {
       out(
         db.query(
           `SELECT * FROM learning_sessions
-           WHERE repo_id=:repo AND ended_at IS NULL
+           WHERE repo_id=$repo AND ended_at IS NULL
            ORDER BY started_at DESC LIMIT 1`,
-          { repo }
+          { $repo: repo }
         )
       );
       return;
@@ -752,8 +780,8 @@ function cmdSession(args, flags) {
       const rating = parseInt(ratingStr, 10);
       if (![1, 2, 3, 4, 5].includes(rating)) fail('rating must be 1-5');
       db.exec(
-        `UPDATE learning_sessions SET self_rated_quality=:r WHERE id=:id`,
-        { r: rating, id }
+        `UPDATE learning_sessions SET self_rated_quality=$r WHERE id=$id`,
+        { $r: rating, $id: id }
       );
       out({ ok: true, session_id: id, self_rated_quality: rating });
       return;
@@ -764,16 +792,17 @@ function cmdSession(args, flags) {
       db.exec(
         `UPDATE learning_sessions
          SET notes = CASE
-             WHEN notes IS NULL OR notes='' THEN :text
-             ELSE notes || char(10) || :text
+             WHEN notes IS NULL OR notes='' THEN $text
+             ELSE notes || char(10) || $text
          END
-         WHERE id=:id`,
-        { id, text }
+         WHERE id=$id`,
+        { $id: id, $text: text }
       );
       out({ ok: true, session_id: id });
       return;
     }
     case 'suggest-break': {
+      process.stderr.write('⚠️  session suggest-break is deprecated, use "session fatigue" instead\n');
       need(args, 1, 'session suggest-break <session_id>');
       const f = fatigueCheck(args[0]);
       out({ session_id: args[0], break_suggested: f.break_suggested });
@@ -787,27 +816,27 @@ function cmdSession(args, flags) {
 function fatigueCheck(sid) {
   const total = db.scalar(
     `SELECT COUNT(*) FROM (SELECT 1 FROM quiz_results
-     WHERE session_id=:sid ORDER BY asked_at DESC LIMIT 5)`,
-    { sid }
+     WHERE session_id=$sid ORDER BY asked_at DESC LIMIT 5)`,
+    { $sid: sid }
   ) ?? 0;
   const correct = db.scalar(
     `SELECT COALESCE(SUM(correct),0) FROM (SELECT correct FROM quiz_results
-     WHERE session_id=:sid ORDER BY asked_at DESC LIMIT 5)`,
-    { sid }
+     WHERE session_id=$sid ORDER BY asked_at DESC LIMIT 5)`,
+    { $sid: sid }
   ) ?? 0;
   const avgRt = db.scalar(
     `SELECT COALESCE(ROUND(AVG(response_time_ms)),0) FROM (
        SELECT response_time_ms FROM quiz_results
-       WHERE session_id=:sid AND response_time_ms IS NOT NULL
+       WHERE session_id=$sid AND response_time_ms IS NOT NULL
        ORDER BY asked_at DESC LIMIT 5)`,
-    { sid }
+    { $sid: sid }
   ) ?? 0;
   const active = db.scalar(
     `SELECT CAST(
        (julianday(COALESCE(ended_at, datetime('now'))) - julianday(started_at)) * 24 * 60
        AS INTEGER)
-     FROM learning_sessions WHERE id=:sid`,
-    { sid }
+     FROM learning_sessions WHERE id=$sid`,
+    { $sid: sid }
   ) ?? 0;
 
   const t = Number(total);
@@ -828,8 +857,8 @@ function fatigueCheck(sid) {
   const breakSuggested = score > 0.6 || am > 25;
 
   db.exec(
-    `UPDATE learning_sessions SET fatigue_score=:score WHERE id=:sid`,
-    { score, sid }
+    `UPDATE learning_sessions SET fatigue_score=$score WHERE id=$sid`,
+    { $score: score, $sid: sid }
   );
 
   return {
@@ -843,13 +872,66 @@ function fatigueCheck(sid) {
   };
 }
 
+// ----- server -----
+async function cmdServer(args) {
+  const sub = args.shift();
+  const daemon = await import('./daemon.js');
+  switch (sub) {
+    case 'status': {
+      const s = await daemon.status();
+      if (s.running) {
+        out({ ...s, url: `http://localhost:${s.port}/` });
+      } else {
+        out(s);
+      }
+      return;
+    }
+    case 'start': {
+      const r = await daemon.startDaemon();
+      if (r.alreadyRunning) {
+        out({ ...r, url: `http://localhost:${r.port}/` });
+      } else {
+        out({ ...r, url: r.port ? `http://localhost:${r.port}/` : null });
+      }
+      return;
+    }
+    case 'stop': {
+      const r = await daemon.stopDaemon();
+      out(r);
+      return;
+    }
+    default:
+      fail(`unknown server subcommand: ${sub}`);
+  }
+}
+
+async function cmdDoctor() {
+  db.init();
+  const integrity = db.scalar('PRAGMA integrity_check');
+  const { status: serverStatus } = await import('./daemon.js');
+  const s = await serverStatus();
+  const topicCount = db.scalar('SELECT COUNT(*) FROM knowledge_topics');
+  const quizCount = db.scalar('SELECT COUNT(*) FROM quiz_results');
+  out({
+    db: {
+      path: db.getDbPath(),
+      integrity,
+      topics: topicCount,
+      quizzes: quizCount,
+    },
+    server: s,
+    node: process.version,
+    version: '0.3.0',
+  });
+}
+
 // ---------------- main ----------------
 
 const USAGE = `Usage: cli.js <module> <command> [--repo R] [args...]
 Modules: init | profile | topic | repo-knowledge | quiz | achievement |
-         curriculum | repo | review | session`;
+         curriculum | repo | review | session | server | doctor`;
 
-function main() {
+async function main() {
   const argv = process.argv.slice(2);
   const { args, flags } = parseGlobalFlags(argv);
   if (args.length === 0) fail(USAGE);
@@ -886,6 +968,12 @@ function main() {
         break;
       case 'session':
         cmdSession(args, flags);
+        break;
+      case 'server':
+        await cmdServer(args);
+        break;
+      case 'doctor':
+        await cmdDoctor();
         break;
       default:
         fail(`unknown module: ${mod}\n${USAGE}`);

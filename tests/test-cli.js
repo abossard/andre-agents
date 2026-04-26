@@ -2,13 +2,14 @@
 // tests/test-cli.js — Node.js test suite for src/cli.js (zero deps).
 process.removeAllListeners('warning');
 
-const { describe, it, before, after } = require('node:test');
-const assert = require('node:assert/strict');
-const { execFileSync } = require('node:child_process');
-const path = require('node:path');
-const fs = require('node:fs');
-const os = require('node:os');
+import { describe, it, before, after } from 'node:test';
+import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import path from 'node:path';
+import fs from 'node:fs';
+import os from 'node:os';
 
+const __dirname = path.dirname(new URL(import.meta.url).pathname);
 const CLI = path.join(__dirname, '..', 'src', 'cli.js');
 const SCRATCH = path.join(__dirname, '..', '.test-tmp');
 fs.mkdirSync(SCRATCH, { recursive: true });

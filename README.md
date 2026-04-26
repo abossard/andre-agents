@@ -1,6 +1,6 @@
 # Learning-First 🎓
 
-**Your AI pair programmer becomes your AI mentor.**
+**Your AI pair programmer becomes your AI mentor — with a live visual dashboard.**
 
 A plugin for [GitHub Copilot CLI](https://docs.github.com/copilot/how-tos/copilot-cli) and
 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that transforms your coding
@@ -9,6 +9,12 @@ agent from "I'll build it for you" into "Let me help you understand it so you ca
 > *"The best AI assistant isn't the one that writes the most code — it's the one that makes you need it less."*
 
 ![Learning-First Dashboard](docs/screenshots/dashboard-top.png)
+
+### ✨ Visual First
+
+The dashboard at `http://localhost:3142` **auto-starts** with every session — your learning
+progress, quiz performance, spaced repetition schedule, and achievements update live via SSE
+as you work in the CLI. No manual server management needed.
 
 ---
 
@@ -223,6 +229,7 @@ codebase and only activates when the AI agent starts a session.
 
 - **Node.js** ≥ 22 (uses built-in `node:sqlite` and `node:test` — zero npm dependencies)
 - **Windows:** requires Git Bash or WSL for the SessionStart hook
+- A modern browser (for the dashboard — auto-opens at `http://localhost:3142`)
 
 ### Step 1: Install for your platform
 
@@ -337,6 +344,25 @@ Say yes, and you're in.
 /learning-reset           # Clear progress (with confirmation)
 ```
 
+### Server Commands
+
+The dashboard server auto-starts with each session. You can also manage it manually:
+
+```bash
+node src/cli.js server status   # Check if running, show URL
+node src/cli.js server start    # Manual start
+node src/cli.js server stop     # Graceful shutdown
+node src/cli.js doctor          # DB integrity, server health, diagnostics
+```
+
+### Environment Detection
+
+The server auto-start is skipped in headless environments:
+- **SSH sessions** — prints `ssh -L 3142:localhost:3142 <host>` hint instead
+- **CI** — detected via `$CI`
+- **Dumb terminals** — detected via `$TERM=dumb`
+- **Explicit opt-out** — set `LEARNING_FIRST_NO_SERVER=1`
+
 ### "How do I use a specific skill?"
 
 Ask the agent directly:
@@ -393,64 +419,107 @@ Full research reports in `docs/research/`.
 ## Testing
 
 ```bash
-npm test
+npm test    # 70 tests (55 CLI + 15 server)
 ```
 
-Pressure test scenarios in `tests/pressure-scenarios/` validate that skills
-enforce the Iron Law even under time pressure, authority claims, and simplicity bias.
+- **CLI tests** (`tests/test-cli.js`) — black-box integration via `execFileSync`, isolated SQLite DBs
+- **Server tests** (`tests/test-server.js`) — HTTP-level API endpoint tests
+- **Pressure scenarios** (`tests/pressure-scenarios/`) — manual validation that skills
+  enforce the Iron Law even under time pressure, authority claims, and simplicity bias
 
 ## Architecture
 
 The plugin is implemented in Node.js (≥ 22) with **zero npm dependencies**:
 
-- **`src/db.js`** — Thin wrapper around `node:sqlite`; schema bootstrap, parameterized
-  query/exec helpers, repo detection.
+- **`src/db.js`** — Thin wrapper around `node:sqlite`; schema bootstrap with `PRAGMA user_version`
+  migrations, parameterized query/exec helpers, repo detection.
 - **`src/cli.js`** — Unified CLI (`node src/cli.js <module> <command> [--repo R] ...`).
   Modules: `init | profile | topic | repo-knowledge | quiz | achievement |
-  curriculum | repo | review | session`.
-- **`src/server.js`** — Optional HTTP server (`npm start`) for browser dashboards.
-  The CLI works fully without it.
+  curriculum | repo | review | session | server | doctor`.
+- **`src/server/`** — Modular HTTP server (auto-starts with sessions):
+  - `index.js` — startup, shutdown, KB file watcher
+  - `routes.js` — dispatch-table router with 18 API endpoints
+  - `queries.js` — DB query wrappers
+  - `sse.js` — Server-Sent Events (live dashboard updates)
+  - `static.js` — SPA + KB static file serving
+  - `util.js` — shared helpers, CORS, security
+- **`src/public/`** — SPA dashboard (vanilla JS, zero framework):
+  - `index.html` — dark-themed shell
+  - `style.css` — GitHub-dark design system with CSS custom properties
+  - `app.js` — state management, SSE subscription, panel rendering
+  - `charts.js` — SVG sparklines, bar charts, progress rings
+- **`src/daemon.js`** — Lockfile-based server lifecycle management
+  (start/stop/status, PID verification, health checks)
+- **`src/notify.js`** — Fire-and-forget CLI → server SSE push
 
 Skills and commands invoke the CLI via `node "$PLUGIN_DIR/src/cli.js" ...`.
 
-## Web Companion
+## Dashboard
 
-The plugin ships with an optional knowledge-base browser. Launch it from the plugin
-directory:
+The plugin ships with a **visual-first dashboard** that auto-starts on every session.
+The dashboard is served at `http://localhost:3142` and includes:
+
+- **KPI strip** — topic count, mastery %, quiz accuracy, achievements
+- **Quiz performance** — SVG sparkline of accuracy over time + per-topic bars
+- **Due reviews** — spaced repetition queue (SM-2 algorithm)
+- **Curriculum progress** — active learning paths with module status
+- **Achievements** — earned badges with glow effects
+- **SSE live updates** — dashboard refreshes automatically as you learn in the CLI
+
+The dashboard uses an **empty-state-first** design — it looks great even with zero data,
+showing a guided onboarding flow instead of empty charts.
+
+### Manual Start
 
 ```bash
-npm start
+npm start                    # starts on http://localhost:3142
+npm start -- --port 8080     # custom port
 ```
-
-This starts `src/server.js` on `http://localhost:3142`, serving per-repo pages from
-`~/.learning-first/knowledge-base/<repo>/` plus a small REST API and SSE stream backed
-by the same SQLite database the CLI uses. The CLI works fully without it — the server
-is opt-in.
-
-Your persistent knowledge base grows with every session — achievements, quiz performance,
-codebase familiarity, prediction cards, and interactive checklists:
-
-![Knowledge Base Dashboard](docs/screenshots/dashboard-full.png)
 
 ## Configuration
 
 | Environment Variable | Default | Description |
 |---------------------|---------|-------------|
 | `LEARNING_FIRST_DB` | `~/.learning-first/knowledge.db` | Knowledge database path |
-| `npm start` (port)  | `3142`                           | Web companion HTTP port (override with `--port`) |
+| `LEARNING_FIRST_NO_SERVER` | — | Set to `1` to disable auto-start |
+
+| CLI Flag | Default | Description |
+|----------|---------|-------------|
+| `--port` | `3142` | Dashboard HTTP port |
+| `--repo` | auto-detected | Override repo ID |
+| `--uds`  | — | Use Unix Domain Socket instead of TCP |
 
 ## Project Structure
 
 ```
 ├── agents/               # Teaching personas (3)
 ├── commands/             # CLI commands (4)
-├── docs/research/        # Research reports (learning science, mentoring)
-├── hooks/                # SessionStart hook for auto-activation
-├── schemas/              # SQLite schema (10 tables)
-├── src/                  # Node.js implementation
-│   ├── db.js             #   SQLite wrapper (node:sqlite)
-│   ├── cli.js            #   Unified CLI used by all skills/commands
-│   └── server.js         #   Optional HTTP server (npm start)
+├── docs/
+│   ├── research/         #   Research reports (learning science, mentoring)
+│   ├── references/       #   Teaching methodology, persuasion principles
+│   └── specs/            #   Design specifications
+├── hooks/                # SessionStart hook (auto-activates + starts dashboard)
+│   ├── hooks.json        #   Hook configuration
+│   └── session-start.js  #   Node.js ESM hook script
+├── schemas/              # SQLite schema (10 tables, versioned migrations)
+├── src/
+│   ├── cli.js            #   Unified CLI (12 modules)
+│   ├── db.js             #   SQLite wrapper (node:sqlite, migrations)
+│   ├── daemon.js          #   Server lifecycle (lockfile, PID, health)
+│   ├── notify.js          #   CLI → server SSE push
+│   ├── server.js          #   Entry point (re-exports server/)
+│   ├── server/            #   Modular HTTP server (6 files)
+│   │   ├── index.js       #     Startup, shutdown, KB watcher
+│   │   ├── routes.js      #     Dispatch-table router (18 endpoints)
+│   │   ├── queries.js     #     DB query wrappers
+│   │   ├── sse.js         #     Server-Sent Events
+│   │   ├── static.js      #     SPA + KB file serving
+│   │   └── util.js        #     Helpers, CORS, security
+│   └── public/            #   SPA dashboard (vanilla JS)
+│       ├── index.html     #     Shell
+│       ├── style.css      #     GitHub-dark design system
+│       ├── app.js         #     State, SSE, rendering
+│       └── charts.js      #     SVG sparklines, bars, progress rings
 ├── skills/               # Learning skills (9 + 1 meta-router)
 │   ├── using-learning-first/  # Router — activates on every message
 │   ├── learning-first/        # Core teaching + prompt templates
@@ -462,7 +531,10 @@ codebase familiarity, prediction cards, and interactive checklists:
 │   ├── learning-planning/
 │   ├── learning-delegation/
 │   └── writing-learning-skills/  # Meta-skill for authoring
-└── tests/                # Unit tests + pressure scenarios
+└── tests/                # Unit tests (70) + pressure scenarios
+    ├── test-cli.js        #   CLI integration tests (55)
+    ├── test-server.js     #   HTTP/API tests (15)
+    └── pressure-scenarios/ #  Manual skill validation
 ```
 
 ## License

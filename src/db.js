@@ -2,16 +2,17 @@
 // Zero dependencies: uses node:sqlite (built-in Node 22+)
 process.removeAllListeners('warning');
 
-const path = require('node:path');
-const fs = require('node:fs');
-const os = require('node:os');
-const { execSync } = require('node:child_process');
-const { DatabaseSync } = require('node:sqlite');
+import path from 'node:path';
+import fs from 'node:fs';
+import os from 'node:os';
+import { execSync } from 'node:child_process';
+import { DatabaseSync } from 'node:sqlite';
 
-const SCHEMA_PATH = path.resolve(__dirname, '..', 'schemas', 'knowledge.sql');
+const SCHEMA_PATH = path.resolve(import.meta.dirname, '..', 'schemas', 'knowledge.sql');
 
 let _db = null;
 let _dbPath = null;
+let _repoIdCache = null;
 
 function getDbPath() {
   if (_dbPath) return _dbPath;
@@ -42,6 +43,34 @@ function _loadSchema(db) {
   db.exec(sql);
 }
 
+function _migrate() {
+  const version = scalar('PRAGMA user_version') || 0;
+
+  if (version < 1) {
+    // v0 → v1: Add indexes for high-traffic queries.
+    exec(
+      `CREATE INDEX IF NOT EXISTS idx_quiz_results_repo_topic
+       ON quiz_results(repo_id, topic_id, asked_at DESC)`
+    );
+    exec(
+      `CREATE INDEX IF NOT EXISTS idx_topic_review_next
+       ON topic_review_state(repo_id, next_review_at)`
+    );
+    exec(
+      `CREATE INDEX IF NOT EXISTS idx_override_debts_repo
+       ON override_debts(repo_id, status)`
+    );
+    exec(
+      `CREATE INDEX IF NOT EXISTS idx_sessions_repo
+       ON learning_sessions(repo_id, ended_at)`
+    );
+    exec(`PRAGMA user_version = 1`);
+  }
+
+  // Future migrations: if (version < 2) { ... exec(`PRAGMA user_version = 2`); }
+  // Note: column removal deferred to a future version after one release of deprecation.
+}
+
 function init() {
   if (_db) return _db;
   const dbPath = getDbPath();
@@ -50,6 +79,7 @@ function init() {
     _db = new DatabaseSync(dbPath);
     _applyPragmas(_db);
     _loadSchema(_db);
+    _migrate();
     return _db;
   } catch (err) {
     _db = null;
@@ -61,20 +91,16 @@ function _getDb() {
   return _db || init();
 }
 
-// node:sqlite uses `$param` named parameters. Allow callers to use `:param`
-// style for ergonomics; translate SQL and params accordingly.
-function _translate(sql, params) {
+function _normalizeParams(params) {
   if (!params || typeof params !== 'object' || Array.isArray(params)) {
-    return { sql, params: params || {} };
+    return params || {};
   }
-  // Replace :name with $name (skip :: which would be a cast operator).
-  const newSql = sql.replace(/(?<!:):([a-zA-Z_][a-zA-Z0-9_]*)/g, '$$$1');
-  const newParams = {};
+  // Replace undefined with null (node:sqlite does not accept undefined).
+  const out = {};
   for (const [k, v] of Object.entries(params)) {
-    const key = k.startsWith('$') ? k : `$${k}`;
-    newParams[key] = v === undefined ? null : v;
+    out[k] = v === undefined ? null : v;
   }
-  return { sql: newSql, params: newParams };
+  return out;
 }
 
 function _wrap(action, sql, params, fn) {
@@ -92,19 +118,19 @@ function _wrap(action, sql, params, fn) {
 
 function query(sql, params = {}) {
   const db = _getDb();
-  const { sql: tSql, params: tParams } = _translate(sql, params);
+  const p = _normalizeParams(params);
   return _wrap('query', sql, params, () => {
-    const stmt = db.prepare(tSql);
-    return stmt.all(tParams);
+    const stmt = db.prepare(sql);
+    return stmt.all(p);
   });
 }
 
 function exec(sql, params = {}) {
   const db = _getDb();
-  const { sql: tSql, params: tParams } = _translate(sql, params);
+  const p = _normalizeParams(params);
   return _wrap('exec', sql, params, () => {
-    const stmt = db.prepare(tSql);
-    const result = stmt.run(tParams);
+    const stmt = db.prepare(sql);
+    const result = stmt.run(p);
     return {
       changes: Number(result.changes ?? 0),
       lastInsertRowid: result.lastInsertRowid ?? null,
@@ -114,10 +140,10 @@ function exec(sql, params = {}) {
 
 function scalar(sql, params = {}) {
   const db = _getDb();
-  const { sql: tSql, params: tParams } = _translate(sql, params);
+  const p = _normalizeParams(params);
   return _wrap('scalar', sql, params, () => {
-    const stmt = db.prepare(tSql);
-    const row = stmt.get(tParams);
+    const stmt = db.prepare(sql);
+    const row = stmt.get(p);
     if (!row) return null;
     const keys = Object.keys(row);
     return keys.length ? row[keys[0]] : null;
@@ -126,7 +152,7 @@ function scalar(sql, params = {}) {
 
 function transaction(fn) {
   const db = _getDb();
-  db.exec('BEGIN');
+  db.exec('BEGIN IMMEDIATE');
   try {
     const result = fn({ query, exec, scalar });
     db.exec('COMMIT');
@@ -152,17 +178,22 @@ function close() {
 }
 
 function detectRepoId() {
+  if (_repoIdCache !== null) return _repoIdCache;
   try {
-    return execSync('git remote get-url origin', {
+    let url = execSync('git remote get-url origin', {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     }).trim();
+    // Strip credentials from URLs like https://user:token@github.com/owner/repo
+    url = url.replace(/\/\/[^@/]+@/, '//');
+    _repoIdCache = url;
   } catch {
-    return path.basename(process.cwd());
+    _repoIdCache = path.basename(process.cwd());
   }
+  return _repoIdCache;
 }
 
-module.exports = {
+export {
   init,
   query,
   exec,

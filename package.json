@@ -3,8 +3,9 @@
   "version": "0.3.0",
   "description": "A learning-focused skill plugin that teaches before implementing",
   "main": "src/cli.js",
+  "type": "module",
   "scripts": {
-    "test": "node --no-warnings --test tests/test-cli.js",
+    "test": "node --no-warnings --test tests/test-cli.js tests/test-server.js",
     "start": "node --no-warnings src/server.js",
     "cli": "node --no-warnings src/cli.js"
   },

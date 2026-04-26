@@ -115,8 +115,8 @@ Read `teaching-methodology.md` in this directory for:
 ## Model Selection for Teaching
 
 All teaching subagents MUST use strong models:
-- **Opus** or **GPT-5.4** for Socratic Tutor, Knowledge Assessor, Curriculum Designer
-- **Opus** or **GPT-5.4** for Learning Reviewer, Self-Review Coach
+- **Opus** or **a strong reasoning model** for Socratic Tutor, Knowledge Assessor, Curriculum Designer
+- **Opus** or **a strong reasoning model** for Learning Reviewer, Self-Review Coach
 - **NEVER** Haiku or other low-cost models — teaching quality requires strong reasoning
 
 ## Common Mistakes in Learning-First Skills
