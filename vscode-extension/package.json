@@ -1,0 +1,101 @@
+{
+  "name": "learning-first-vscode",
+  "displayName": "Learning First",
+  "description": "Teaches concepts before implementing — Socratic learning for developers. A teaching-first Copilot Chat participant that guides understanding through questions, not answers.",
+  "version": "0.1.0",
+  "publisher": "abossard",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/abossard/andre-agents"
+  },
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "categories": [
+    "AI",
+    "Chat",
+    "Education"
+  ],
+  "keywords": [
+    "copilot",
+    "learning",
+    "teaching",
+    "socratic",
+    "onboarding"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "chatParticipants": [
+      {
+        "id": "learning-first.learning-first",
+        "fullName": "Learning First",
+        "name": "learning-first",
+        "description": "Teaches concepts before implementing — Socratic learning for developers",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "status",
+            "description": "Show your learning profile and progress"
+          },
+          {
+            "name": "achievements",
+            "description": "List earned learning achievements"
+          },
+          {
+            "name": "stats",
+            "description": "Quiz accuracy and learning velocity"
+          },
+          {
+            "name": "reset",
+            "description": "Reset learning progress"
+          }
+        ],
+        "disambiguation": [
+          {
+            "category": "learning",
+            "description": "The user wants to learn about code or concepts before implementing them.",
+            "examples": [
+              "Teach me how authentication works in this codebase",
+              "Help me understand the database schema before I make changes",
+              "I want to learn about the API patterns used here"
+            ]
+          }
+        ]
+      }
+    ],
+    "configuration": {
+      "title": "Learning First",
+      "properties": {
+        "learning-first.pluginRoot": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the learning-first plugin root directory. If empty, resolves from extension location."
+        },
+        "learning-first.nodePath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to Node.js >= 22 binary. If empty, auto-detects from nvm or PATH."
+        },
+        "learning-first.autoStartDashboard": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically start the learning dashboard server on first use."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src/",
+    "test": "node --test tests/test-*.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/vscode": "^1.100.0",
+    "typescript": "^5.9.0"
+  }
+}

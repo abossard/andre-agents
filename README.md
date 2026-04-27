@@ -246,6 +246,44 @@ copilot plugin install abossard/andre-agents
 ```
 Then select "Install" and enter `abossard/andre-agents`.
 
+#### VS Code — Chat Participant Extension
+
+The extension registers `@learning-first` as a Chat Participant in GitHub Copilot Chat,
+with full slash command support and automatic topic tracking.
+
+```bash
+# Clone the repo
+git clone https://github.com/abossard/andre-agents.git ~/learning-first
+
+# Build and install the extension (one-time)
+cd ~/learning-first/vscode-extension
+npm install
+npm run compile
+npx @vscode/vsce package
+code --install-extension learning-first-vscode-0.1.0.vsix
+```
+
+After installation, **reload VS Code** (Ctrl+Shift+P → "Reload Window") and
+`@learning-first` is available in Copilot Chat — in any project, permanently.
+No need to press F5 or open a dev host.
+
+**Updating:** After pulling new changes, re-run the build and install steps above.
+
+**Development mode:** If you want to modify the extension, open `~/learning-first/vscode-extension`
+in VS Code and press **F5** to launch the Extension Development Host.
+
+The extension works in **any repository** — it detects the current workspace's repo
+via `git remote` and tracks learning progress per-repo in `~/.learning-first/knowledge.db`.
+The CLI, skills, and agent personas are loaded from the plugin's install location, not
+from your project.
+
+**Configuration** (optional, in VS Code settings):
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `learning-first.pluginRoot` | auto-detected | Path to the plugin root directory |
+| `learning-first.nodePath` | auto-detected | Path to Node.js ≥ 22 binary |
+| `learning-first.autoStartDashboard` | `true` | Auto-start the dashboard server |
+
 #### Claude Code
 
 ```bash
@@ -337,6 +375,15 @@ Say yes, and you're in.
 
 ### Commands
 
+**In VS Code Copilot Chat** (via `@learning-first`):
+```
+@learning-first /status          # Your knowledge profile
+@learning-first /achievements    # Earned milestones 🏆
+@learning-first /stats           # Quiz accuracy and topics
+@learning-first /reset           # Clear progress (with confirmation)
+```
+
+**In CLI sessions**:
 ```
 /learning-status          # Your knowledge profile
 /learning-achievements    # Earned milestones 🏆
@@ -420,10 +467,14 @@ Full research reports in `docs/research/`.
 
 ```bash
 npm test    # 70 tests (55 CLI + 15 server)
+
+# VS Code extension tests (separate package)
+cd vscode-extension && npm test    # 46 tests
 ```
 
 - **CLI tests** (`tests/test-cli.js`) — black-box integration via `execFileSync`, isolated SQLite DBs
 - **Server tests** (`tests/test-server.js`) — HTTP-level API endpoint tests
+- **Extension tests** (`vscode-extension/tests/`) — unit tests for skill routing, context manager, CLI bridge, and module exports (mocked `vscode` module, runs in plain Node.js)
 - **Pressure scenarios** (`tests/pressure-scenarios/`) — manual validation that skills
   enforce the Iron Law even under time pressure, authority claims, and simplicity bias
 
@@ -451,6 +502,15 @@ The plugin is implemented in Node.js (≥ 22) with **zero npm dependencies**:
 - **`src/daemon.js`** — Lockfile-based server lifecycle management
   (start/stop/status, PID verification, health checks)
 - **`src/notify.js`** — Fire-and-forget CLI → server SSE push
+- **`vscode-extension/`** — VS Code Chat Participant extension (TypeScript):
+  - `extension.ts` — activation, participant registration
+  - `participant.ts` — `@learning-first` chat handler, slash commands, topic recording
+  - `cli-bridge.ts` — spawns `node src/cli.js` with Node ≥ 22 discovery
+  - `skill-router.ts` — intent routing, Iron Law prompt builder, skill/persona loading
+  - `context-manager.ts` — lazy workspace context (repo detection, opt-in, mastery level)
+
+The VS Code extension is a thin shell — it delegates all data operations to the CLI
+and loads skill/persona content from the plugin root directory.
 
 Skills and commands invoke the CLI via `node "$PLUGIN_DIR/src/cli.js" ...`.
 
@@ -535,6 +595,12 @@ npm start -- --port 8080     # custom port
     ├── test-cli.js        #   CLI integration tests (55)
     ├── test-server.js     #   HTTP/API tests (15)
     └── pressure-scenarios/ #  Manual skill validation
+├── vscode-extension/     # VS Code Chat Participant (TypeScript)
+    ├── src/               #   Extension source (5 modules)
+    ├── tests/             #   Unit tests (46, mocked vscode)
+    ├── out/               #   Compiled JS output
+    ├── package.json       #   Extension manifest + chat participant config
+    └── tsconfig.json
 ```
 
 ## License
