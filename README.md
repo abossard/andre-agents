@@ -233,39 +233,6 @@ codebase and only activates when the AI agent starts a session.
 
 ### Step 1: Install for your platform
 
-#### VS Code — Chat Participant Extension (Recommended)
-
-The extension registers `@learning-first` as a Chat Participant in GitHub Copilot Chat,
-with full slash command support and automatic topic tracking.
-
-```bash
-# Clone the repo
-git clone https://github.com/abossard/andre-agents.git ~/learning-first
-
-# Install and compile the extension
-cd ~/learning-first/vscode-extension
-npm install
-npm run compile
-```
-
-**To run in development mode:**
-1. Open `~/learning-first/vscode-extension` in VS Code
-2. Press **F5** to launch the Extension Development Host
-3. In the new window, open **any project** you want to learn in
-4. Open Copilot Chat and type `@learning-first` to start
-
-The extension works in **any repository** — it detects the current workspace's repo
-via `git remote` and tracks learning progress per-repo in `~/.learning-first/knowledge.db`.
-The CLI, skills, and agent personas are loaded from the plugin's install location, not
-from your project.
-
-**Configuration** (optional, in VS Code settings):
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `learning-first.pluginRoot` | auto-detected | Path to the plugin root directory |
-| `learning-first.nodePath` | auto-detected | Path to Node.js ≥ 22 binary |
-| `learning-first.autoStartDashboard` | `true` | Auto-start the dashboard server |
-
 #### GitHub Copilot CLI — from terminal
 
 ```bash
@@ -278,6 +245,44 @@ copilot plugin install abossard/andre-agents
 /plugin
 ```
 Then select "Install" and enter `abossard/andre-agents`.
+
+#### VS Code — Chat Participant Extension
+
+The extension registers `@learning-first` as a Chat Participant in GitHub Copilot Chat,
+with full slash command support and automatic topic tracking.
+
+```bash
+# Clone the repo
+git clone https://github.com/abossard/andre-agents.git ~/learning-first
+
+# Build and install the extension (one-time)
+cd ~/learning-first/vscode-extension
+npm install
+npm run compile
+npx @vscode/vsce package
+code --install-extension learning-first-vscode-0.1.0.vsix
+```
+
+After installation, **reload VS Code** (Ctrl+Shift+P → "Reload Window") and
+`@learning-first` is available in Copilot Chat — in any project, permanently.
+No need to press F5 or open a dev host.
+
+**Updating:** After pulling new changes, re-run the build and install steps above.
+
+**Development mode:** If you want to modify the extension, open `~/learning-first/vscode-extension`
+in VS Code and press **F5** to launch the Extension Development Host.
+
+The extension works in **any repository** — it detects the current workspace's repo
+via `git remote` and tracks learning progress per-repo in `~/.learning-first/knowledge.db`.
+The CLI, skills, and agent personas are loaded from the plugin's install location, not
+from your project.
+
+**Configuration** (optional, in VS Code settings):
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `learning-first.pluginRoot` | auto-detected | Path to the plugin root directory |
+| `learning-first.nodePath` | auto-detected | Path to Node.js ≥ 22 binary |
+| `learning-first.autoStartDashboard` | `true` | Auto-start the dashboard server |
 
 #### Claude Code
 
@@ -462,10 +467,14 @@ Full research reports in `docs/research/`.
 
 ```bash
 npm test    # 70 tests (55 CLI + 15 server)
+
+# VS Code extension tests (separate package)
+cd vscode-extension && npm test    # 46 tests
 ```
 
 - **CLI tests** (`tests/test-cli.js`) — black-box integration via `execFileSync`, isolated SQLite DBs
 - **Server tests** (`tests/test-server.js`) — HTTP-level API endpoint tests
+- **Extension tests** (`vscode-extension/tests/`) — unit tests for skill routing, context manager, CLI bridge, and module exports (mocked `vscode` module, runs in plain Node.js)
 - **Pressure scenarios** (`tests/pressure-scenarios/`) — manual validation that skills
   enforce the Iron Law even under time pressure, authority claims, and simplicity bias
 
@@ -586,6 +595,12 @@ npm start -- --port 8080     # custom port
     ├── test-cli.js        #   CLI integration tests (55)
     ├── test-server.js     #   HTTP/API tests (15)
     └── pressure-scenarios/ #  Manual skill validation
+├── vscode-extension/     # VS Code Chat Participant (TypeScript)
+    ├── src/               #   Extension source (5 modules)
+    ├── tests/             #   Unit tests (46, mocked vscode)
+    ├── out/               #   Compiled JS output
+    ├── package.json       #   Extension manifest + chat participant config
+    └── tsconfig.json
 ```
 
 ## License

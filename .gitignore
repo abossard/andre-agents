@@ -1,1 +1,4 @@
 .playwright-mcp/
+NOTES*.md
+*.vsix
+docs/vscode-extension-discovery.md
