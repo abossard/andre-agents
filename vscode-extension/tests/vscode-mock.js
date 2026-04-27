@@ -41,6 +41,27 @@ class ChatResponseMarkdownPart {
   }
 }
 
+class LanguageModelTextPart {
+  constructor(value) {
+    this.value = value;
+  }
+}
+
+class LanguageModelToolCallPart {
+  constructor(callId, name, input) {
+    this.callId = callId;
+    this.name = name;
+    this.input = input;
+  }
+}
+
+class LanguageModelToolResultPart {
+  constructor(callId, content) {
+    this.callId = callId;
+    this.content = content;
+  }
+}
+
 class ChatRequestTurn {
   constructor(prompt) {
     this.prompt = prompt;
@@ -78,6 +99,9 @@ module.exports = {
   Uri,
   LanguageModelError,
   LanguageModelChatMessage,
+  LanguageModelTextPart,
+  LanguageModelToolCallPart,
+  LanguageModelToolResultPart,
   ChatResponseMarkdownPart,
   ChatRequestTurn,
   ChatResponseTurn,

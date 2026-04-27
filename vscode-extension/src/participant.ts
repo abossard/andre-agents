@@ -9,6 +9,7 @@ import * as vscode from 'vscode';
 import { runCli, runCliJson } from './cli-bridge';
 import { getContext, refreshContext, buildWelcomeMessage } from './context-manager';
 import { routeToSkill, isOverrideRequest, buildPromptPrefix } from './skill-router';
+import { QUIZ_TOOLS, QUIZ_TOOL_INSTRUCTIONS, executeQuizTool, isQuizTool, setSessionId, resetTimingState } from './quiz-tools';
 import type { RepoInfo } from './types';
 
 const PARTICIPANT_ID = 'learning-first.learning-first';
@@ -176,58 +177,98 @@ async function handleLearningRequest(
 
   stream.progress(`Teaching with ${route?.description ?? 'learning-first'}...`);
 
-  // Build the prompt with Iron Law + persona + skill instructions
+  // Build the prompt with Iron Law + persona + skill instructions + quiz tools
   const promptPrefix = buildPromptPrefix(extensionUri, skillName, ctx.masteryLevel);
+
+  // Start a session for quiz tracking
+  let sessionId: string | null = null;
+  if (ctx.repoInfo) {
+    const sessionResult = await runCli(extensionUri, [
+      'session', 'start', '--repo', ctx.repoInfo.repo_id,
+    ]);
+    sessionId = sessionResult.parsed
+      ? (sessionResult.parsed as { session_id?: string }).session_id ?? null
+      : null;
+    if (sessionId) {
+      setSessionId(sessionId);
+    }
+  }
 
   let fullResponse = '';
   try {
-    const messages = [
-      vscode.LanguageModelChatMessage.User(promptPrefix),
+    const messages: vscode.LanguageModelChatMessage[] = [
+      vscode.LanguageModelChatMessage.User(promptPrefix + '\n\n' + QUIZ_TOOL_INSTRUCTIONS),
       // Include relevant chat history context
       ...buildHistoryContext(chatContext),
       vscode.LanguageModelChatMessage.User(request.prompt),
     ];
 
-    const chatResponse = await request.model.sendRequest(messages, {}, token);
+    const repoId = ctx.repoInfo?.repo_id ?? '_global';
 
-    for await (const fragment of chatResponse.text) {
-      stream.markdown(fragment);
-      fullResponse += fragment;
+    // Tool-call loop: stream text, handle tool calls, continue
+    let response = await request.model.sendRequest(messages, { tools: QUIZ_TOOLS }, token);
+
+    const MAX_TOOL_ROUNDS = 10;
+    for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+      const toolCalls: vscode.LanguageModelToolCallPart[] = [];
+
+      for await (const part of response.stream) {
+        if (part instanceof vscode.LanguageModelTextPart) {
+          stream.markdown(part.value);
+          fullResponse += part.value;
+        } else if (part instanceof vscode.LanguageModelToolCallPart) {
+          toolCalls.push(part);
+        }
+      }
+
+      // If no tool calls, we're done
+      if (toolCalls.length === 0) break;
+
+      // Process each tool call and add results to messages
+      for (const call of toolCalls) {
+        if (isQuizTool(call.name)) {
+          const resultStr = await executeQuizTool(call.name, call.input, extensionUri, repoId);
+          messages.push(
+            vscode.LanguageModelChatMessage.Assistant([call]),
+            vscode.LanguageModelChatMessage.User([
+              new vscode.LanguageModelToolResultPart(call.callId, [
+                new vscode.LanguageModelTextPart(resultStr),
+              ]),
+            ]),
+          );
+        }
+      }
+
+      // Continue the conversation with tool results
+      response = await request.model.sendRequest(messages, { tools: QUIZ_TOOLS }, token);
     }
   } catch (err) {
     handleLLMError(err, stream);
   }
 
-  // Record topics and session in the background
+  // Record topics in the background; end session
   if (ctx.repoInfo && fullResponse) {
-    recordLearningProgress(request, extensionUri, ctx.repoInfo, skillName, request.prompt)
+    recordLearningProgress(extensionUri, ctx.repoInfo, skillName, request.prompt)
       .catch(() => { /* fire and forget */ });
+  }
+  if (sessionId) {
+    runCli(extensionUri, ['session', 'end', sessionId]).catch(() => {});
   }
 
   return { metadata: { command: '', skill: skillName } };
 }
 
 /**
- * Record learning progress: create a session and upsert a topic based on
- * the user's prompt and the matched skill. No LLM call needed — derive the
+ * Record learning progress: upsert a topic based on the user's prompt
+ * and the matched skill. Sessions are managed by the caller.
  * topic deterministically from the request.
  */
 async function recordLearningProgress(
-  _request: vscode.ChatRequest,
   extensionUri: vscode.Uri,
   repoInfo: RepoInfo,
   skillName: string,
   userPrompt: string,
 ): Promise<void> {
-  // Start a session
-  const sessionResult = await runCli(extensionUri, [
-    'session', 'start', '--repo', repoInfo.repo_id,
-  ]);
-
-  const sessionId = sessionResult.parsed
-    ? (sessionResult.parsed as { session_id?: string }).session_id
-    : undefined;
-
   // Derive a topic from the user prompt — simple deterministic extraction
   const topicId = userPrompt
     .toLowerCase()
@@ -268,11 +309,6 @@ async function recordLearningProgress(
       topicId, 'in_progress',
       '--repo', repoInfo.repo_id,
     ]);
-  }
-
-  // End the session
-  if (sessionId) {
-    await runCli(extensionUri, ['session', 'end', sessionId]).catch(() => {});
   }
 }
 

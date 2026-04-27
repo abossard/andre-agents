@@ -23,7 +23,7 @@ function fail(msg) {
 
 function parseGlobalFlags(argv) {
   const args = [];
-  const flags = { repo: null, limit: null, session: null, responseTime: null };
+  const flags = { repo: null, limit: null, session: null, responseTime: null, confidence: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--repo') {
@@ -34,6 +34,8 @@ function parseGlobalFlags(argv) {
       flags.session = argv[++i];
     } else if (a === '--response-time') {
       flags.responseTime = parseInt(argv[++i], 10);
+    } else if (a === '--confidence') {
+      flags.confidence = parseInt(argv[++i], 10);
     } else {
       args.push(a);
     }
@@ -218,10 +220,11 @@ function cmdQuiz(args, flags) {
       const depth = parseInt(depthStr, 10);
       const session_id = flags.session || null;
       const response_time_ms = Number.isFinite(flags.responseTime) ? flags.responseTime : null;
+      const confidence = Number.isFinite(flags.confidence) && flags.confidence >= 1 && flags.confidence <= 5 ? flags.confidence : null;
       const result = db.exec(
-        `INSERT INTO quiz_results (repo_id, topic_id, question, user_answer, correct, feedback, depth_level, session_id, response_time_ms)
-         VALUES ($repo, $topic_id, $question, $answer, $correct, $feedback, $depth, $session_id, $response_time_ms)`,
-        { $repo: repo, $topic_id: topic_id, $question: question, $answer: answer, $correct: correct, $feedback: feedback, $depth: depth, $session_id: session_id, $response_time_ms: response_time_ms }
+        `INSERT INTO quiz_results (repo_id, topic_id, question, user_answer, correct, feedback, depth_level, session_id, response_time_ms, confidence_prediction)
+         VALUES ($repo, $topic_id, $question, $answer, $correct, $feedback, $depth, $session_id, $response_time_ms, $confidence)`,
+        { $repo: repo, $topic_id: topic_id, $question: question, $answer: answer, $correct: correct, $feedback: feedback, $depth: depth, $session_id: session_id, $response_time_ms: response_time_ms, $confidence: confidence }
       );
       out({ ok: true, id: Number(result.lastInsertRowid) });
       notifyServer('quiz-recorded', { topic_id, repo_id: repo, correct });

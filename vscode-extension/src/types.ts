@@ -55,3 +55,28 @@ export interface WorkspaceContext {
   /** Timestamp of last initialization. */
   lastInit: number;
 }
+
+/** Input for the recordQuizResult tool. */
+export interface RecordQuizInput {
+  topicId: string;
+  question: string;
+  userAnswer: string;
+  correct: boolean;
+  feedback: string;
+  depth: number;
+  quizKind?: 'recall' | 'apply' | 'transfer' | 'explain';
+  confidence?: number;
+}
+
+/** Input for the checkFatigue tool. */
+export interface CheckFatigueInput {
+  sessionId: string;
+}
+
+/** State tracked between turns for quiz timing. */
+export interface QuizTimingState {
+  /** Timestamp (ms) when the last quiz question was asked. */
+  lastQuizAskedAt: number | null;
+  /** Active session ID for quiz recording. */
+  sessionId: string | null;
+}
