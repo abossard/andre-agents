@@ -114,10 +114,34 @@ async function handleLearningRequest(
   token: vscode.CancellationToken
 ): Promise<vscode.ChatResult> {
   // Lazy-init workspace context
-  const ctx = await getContext(extensionUri);
+  let ctx = await getContext(extensionUri);
 
-  // First interaction: check repo opt-in
+  // Check if this is a response to the repo opt-in prompt
   if (ctx.repoInfo && !ctx.repoPref?.exists) {
+    const previousTurnWasOptIn = chatContext.history.some(
+      turn =>
+        turn instanceof vscode.ChatResponseTurn &&
+        (turn.result as vscode.ChatResult)?.metadata?.command === 'repo-opt-in'
+    );
+
+    const normalizedPrompt = request.prompt.trim().toLowerCase();
+    if (previousTurnWasOptIn && (normalizedPrompt === 'yes' || normalizedPrompt === 'no')) {
+      const enabled = normalizedPrompt === 'yes' ? 1 : 0;
+      await runCli(extensionUri, [
+        'repo', 'enable',
+        ctx.repoInfo.repo_id, ctx.repoInfo.repo_name, String(enabled),
+      ]);
+      // Refresh context to pick up the new preference
+      ctx = await refreshContext(extensionUri);
+      if (enabled) {
+        stream.markdown(`✅ Learning mode **enabled** for **${ctx.repoInfo!.repo_name}**. I'll teach concepts before you implement.\n\nAsk me anything to get started!`);
+      } else {
+        stream.markdown(`👍 Learning mode **disabled** for **${ctx.repoInfo!.repo_name}**. I'll work normally.`);
+      }
+      return { metadata: { command: 'repo-opt-in-response' } };
+    }
+
+    // First interaction: show opt-in prompt
     stream.markdown(
       `👋 I notice this is your first time in **${ctx.repoInfo.repo_name}** with Learning First.\n\n` +
       `Would you like learning mode active for this repository?\n` +
@@ -155,6 +179,7 @@ async function handleLearningRequest(
   // Build the prompt with Iron Law + persona + skill instructions
   const promptPrefix = buildPromptPrefix(extensionUri, skillName, ctx.masteryLevel);
 
+  let fullResponse = '';
   try {
     const messages = [
       vscode.LanguageModelChatMessage.User(promptPrefix),
@@ -167,21 +192,88 @@ async function handleLearningRequest(
 
     for await (const fragment of chatResponse.text) {
       stream.markdown(fragment);
+      fullResponse += fragment;
     }
   } catch (err) {
     handleLLMError(err, stream);
   }
 
-  // Record the interaction
-  if (ctx.repoInfo) {
-    runCli(extensionUri, [
-      'session', 'record',
-      '--repo', ctx.repoInfo.repo_id,
-      '--skill', skillName,
-    ]).catch(() => { /* fire and forget */ });
+  // Record topics and session in the background
+  if (ctx.repoInfo && fullResponse) {
+    recordLearningProgress(request, extensionUri, ctx.repoInfo, skillName, request.prompt)
+      .catch(() => { /* fire and forget */ });
   }
 
   return { metadata: { command: '', skill: skillName } };
+}
+
+/**
+ * Record learning progress: create a session and upsert a topic based on
+ * the user's prompt and the matched skill. No LLM call needed — derive the
+ * topic deterministically from the request.
+ */
+async function recordLearningProgress(
+  _request: vscode.ChatRequest,
+  extensionUri: vscode.Uri,
+  repoInfo: RepoInfo,
+  skillName: string,
+  userPrompt: string,
+): Promise<void> {
+  // Start a session
+  const sessionResult = await runCli(extensionUri, [
+    'session', 'start', '--repo', repoInfo.repo_id,
+  ]);
+
+  const sessionId = sessionResult.parsed
+    ? (sessionResult.parsed as { session_id?: string }).session_id
+    : undefined;
+
+  // Derive a topic from the user prompt — simple deterministic extraction
+  const topicId = userPrompt
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .slice(0, 60);
+
+  // Map skill name to domain
+  const skillToDomain: Record<string, string> = {
+    'learning-first': 'general',
+    'learning-tdd': 'testing',
+    'learning-debugging': 'debugging',
+    'learning-code-review': 'code-quality',
+    'learning-review-feedback': 'code-quality',
+    'learning-verification': 'verification',
+    'learning-planning': 'architecture',
+    'learning-delegation': 'workflow',
+    'writing-learning-skills': 'meta',
+  };
+
+  const domain = skillToDomain[skillName] ?? 'general';
+
+  // Create a human-readable title from the prompt
+  const title = userPrompt.length > 80
+    ? userPrompt.slice(0, 77) + '...'
+    : userPrompt;
+
+  if (topicId) {
+    await runCli(extensionUri, [
+      'topic', 'upsert',
+      topicId, domain, title, 'repo', '1',
+      '--repo', repoInfo.repo_id,
+    ]);
+
+    await runCli(extensionUri, [
+      'topic', 'status',
+      topicId, 'in_progress',
+      '--repo', repoInfo.repo_id,
+    ]);
+  }
+
+  // End the session
+  if (sessionId) {
+    await runCli(extensionUri, ['session', 'end', sessionId]).catch(() => {});
+  }
 }
 
 /**

@@ -233,6 +233,39 @@ codebase and only activates when the AI agent starts a session.
 
 ### Step 1: Install for your platform
 
+#### VS Code — Chat Participant Extension (Recommended)
+
+The extension registers `@learning-first` as a Chat Participant in GitHub Copilot Chat,
+with full slash command support and automatic topic tracking.
+
+```bash
+# Clone the repo
+git clone https://github.com/abossard/andre-agents.git ~/learning-first
+
+# Install and compile the extension
+cd ~/learning-first/vscode-extension
+npm install
+npm run compile
+```
+
+**To run in development mode:**
+1. Open `~/learning-first/vscode-extension` in VS Code
+2. Press **F5** to launch the Extension Development Host
+3. In the new window, open **any project** you want to learn in
+4. Open Copilot Chat and type `@learning-first` to start
+
+The extension works in **any repository** — it detects the current workspace's repo
+via `git remote` and tracks learning progress per-repo in `~/.learning-first/knowledge.db`.
+The CLI, skills, and agent personas are loaded from the plugin's install location, not
+from your project.
+
+**Configuration** (optional, in VS Code settings):
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `learning-first.pluginRoot` | auto-detected | Path to the plugin root directory |
+| `learning-first.nodePath` | auto-detected | Path to Node.js ≥ 22 binary |
+| `learning-first.autoStartDashboard` | `true` | Auto-start the dashboard server |
+
 #### GitHub Copilot CLI — from terminal
 
 ```bash
@@ -337,6 +370,15 @@ Say yes, and you're in.
 
 ### Commands
 
+**In VS Code Copilot Chat** (via `@learning-first`):
+```
+@learning-first /status          # Your knowledge profile
+@learning-first /achievements    # Earned milestones 🏆
+@learning-first /stats           # Quiz accuracy and topics
+@learning-first /reset           # Clear progress (with confirmation)
+```
+
+**In CLI sessions**:
 ```
 /learning-status          # Your knowledge profile
 /learning-achievements    # Earned milestones 🏆
@@ -451,6 +493,15 @@ The plugin is implemented in Node.js (≥ 22) with **zero npm dependencies**:
 - **`src/daemon.js`** — Lockfile-based server lifecycle management
   (start/stop/status, PID verification, health checks)
 - **`src/notify.js`** — Fire-and-forget CLI → server SSE push
+- **`vscode-extension/`** — VS Code Chat Participant extension (TypeScript):
+  - `extension.ts` — activation, participant registration
+  - `participant.ts` — `@learning-first` chat handler, slash commands, topic recording
+  - `cli-bridge.ts` — spawns `node src/cli.js` with Node ≥ 22 discovery
+  - `skill-router.ts` — intent routing, Iron Law prompt builder, skill/persona loading
+  - `context-manager.ts` — lazy workspace context (repo detection, opt-in, mastery level)
+
+The VS Code extension is a thin shell — it delegates all data operations to the CLI
+and loads skill/persona content from the plugin root directory.
 
 Skills and commands invoke the CLI via `node "$PLUGIN_DIR/src/cli.js" ...`.
 
